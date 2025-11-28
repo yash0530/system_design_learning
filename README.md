@@ -58,35 +58,28 @@
 #### Cache Invalidation
 - If the data is modified in the database, it should be invalidated in the cache.
 
-##### Write-through cache
-- Data is written into the cache and the corresponding database at the same time.
-- Higher write latency
-
-##### Write-around cache
-- Data is written directly to permanent storage, bypassing the cache.
-- Reduce the cache being flooded with write operations that will not subsequently be re-read.
-- Read request for recently written data will create a “cache miss” and must be read from slower back-end storage and experience higher latency.
-
-##### Write-back cache
-- Data is written to cache alone and completion is immediately confirmed to the client.
-- Data is written to permanent storage at a fixed interval.
-- Lower write latency, this speed comes with the risk of data loss in case of a crash.
-
-##### Read-Through Cache
-- When there is a cache miss, the cache queries the database and caches the result.
-
-##### Cache Aside (Lazy Loading)
-- When there is a cache miss, the application (not cache) queries the database and caches the result.
-
-##### TTL
-- Time To Live, the cache is set to expire after a certain amount of time.
-
-##### Refresh-Ahead
-- The cache is configured to automatically refresh a key before it fully expires. If a key has a 60-second TTL, the system might try to reload it from the database at the 50-second mark if it is being accessed.
-- Highly popular keys (hot keys) where you cannot afford the latency of a cache miss (e.g., the homepage of a major news site or current stock prices).
-
-##### Stale-while-revalidate
-- When a cache entry expires, the system serves the stale (old) data one last time to the user immediately, while simultaneously triggering a background process to fetch the fresh data.
+- **Write-through cache**
+    - Data is written into the cache and the corresponding database at the same time.
+    - Higher write latency
+- **Write-around cache**
+    - Data is written directly to permanent storage, bypassing the cache.
+    - Reduce the cache being flooded with write operations that will not subsequently be re-read.
+    - Read request for recently written data will create a “cache miss” and must be read from slower back-end storage and experience higher latency.
+- **Write-back cache**
+    - Data is written to cache alone and completion is immediately confirmed to the client.
+    - Data is written to permanent storage at a fixed interval.
+    - Lower write latency, this speed comes with the risk of data loss in case of a crash.
+- **Read-Through Cache**
+    - When there is a cache miss, the cache queries the database and caches the result.
+- **Cache Aside (Lazy Loading)**
+    - When there is a cache miss, the application (not cache) queries the database and caches the result.
+- **TTL**
+    - Time To Live, the cache is set to expire after a certain amount of time.
+- **Refresh-Ahead**
+    - The cache is configured to automatically refresh a key before it fully expires. If a key has a 60-second TTL, the system might try to reload it from the database at the 50-second mark if it is being accessed.
+    - Highly popular keys (hot keys) where you cannot afford the latency of a cache miss (e.g., the homepage of a major news site or current stock prices).
+- **Stale-while-revalidate**
+    - When a cache entry expires, the system serves the stale (old) data one last time to the user immediately, while simultaneously triggering a background process to fetch the fresh data.
 
 #### Cache Eviction
 - Least Recently Used (LRU)
@@ -98,3 +91,19 @@
 
 -----
 
+### Data Partitioning
+- Data partitioning is a technique to break up a big database (DB) into many smaller parts.
+- It is the process of splitting up a DB/table across multiple machines to improve the manageability, performance, availability, and load balancing of an application.
+
+#### Partitioning Methods
+- **Horizontal partitioning (Data Sharding)**
+    - We put different rows into different tables (machines).
+    - Example: ZIP codes less than 10000 are stored in one table and ZIP codes greater than 10000 are stored in a separate table.
+    - Careful about the distribution of the data, otherwise it will lead to unbalanced servers.
+- **Vertical Partitioning (Column Partitioning)**
+    - We put different columns into different tables (machines).
+    - The main problem with this approach is that if our application experiences additional growth, then it may be necessary to further partition a feature specific DB across various servers (e.g. it would not be possible for a single server to handle all the metadata queries for 10 billion photos by 140 million users).
+- **Directory Based Partitioning**
+    - Create a lookup service which knows your current partitioning scheme and abstracts it away from the DB access code.
+
+#### Partitioning Criteria
