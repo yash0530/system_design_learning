@@ -107,3 +107,85 @@
     - Create a lookup service which knows your current partitioning scheme and abstracts it away from the DB access code.
 
 #### Partitioning Criteria
+- **Key or Hash-based partitioning**
+    - Apply a hash function to some key attributes of the entity we are storing; that yields the partition number.
+    - Example: 100 servers, hash(user_id) % 100
+        - Fixes the total number of DB servers;  adding new servers means changing the hash function and data redistribution, and downtime for the service.
+- **Consistent Hashing**
+    - It maps both keys and servers to a virtual "ring", and a key is assigned to the first server it encounters moving clockwise around the ring.
+    - Node and keys are both hashed and mapped to the ring.
+    - Virtual nodes for better distribution.
+    - Self balancing binary search tree for searching nodes.
+- **List Partitioning**
+    - For example, we can decide all users living in Iceland, Norway, Sweden, Finland, or Denmark will be stored in a partition for the Nordic countries.
+    - List partitioning is a partitioning method where the data is partitioned based on a list of values.
+- **Round Robin Partitioning**
+    - Inefficient Querying
+    - Lack of Key Awareness
+- **Composite partitioning**
+    - Combines multiple partitioning methods.
+    - Example: First applying a list partitioning scheme to get region and then use consistent hashing.
+
+#### Problems of Data Partitioning
+- Most of these constraints are due to the fact that operations across multiple tables or multiple rows in the same table will no longer run on the same server.
+- **Joins and Denormalization**
+    - Joins will not be performance efficient since data has to be compiled from multiple servers.
+    - Denormalization is a common strategy to improve performance.
+    - The service now has to deal with all the perils of denormalization such as data inconsistency.
+- **Referential integrity**
+    - Most of RDBMS do not support foreign keys constraints across databases on different database servers.
+    - Applications that require referential integrity on partitioned databases often have to enforce it in application code.
+    - Applications have to run regular SQL jobs to clean up dangling references.
+- **Rebalancing**
+    - Scheme like directory based partitioning makes rebalancing easier at the cost of increasing the complexity. It also creates a new single point of failure (lookup service/database).
+
+-----
+
+### Indexes
+- Index on a column - we store that column and a pointer to the whole row in the index.
+- An index can dramatically speed up data retrieval but may itself be large due to the additional keys, which slow down data insertion & update.
+- Primary Index; Clustered Index; Secondary Index
+- Dense Index; Sparse Index
+- Bitmap Index; Reverse Index; Hash Index; Filtered Index; Function-based Index; Spatial Index
+
+
+-----
+
+### Proxies
+- A proxy server is a piece of *software or hardware* that acts as an intermediary, that can observe, modify, block, or route that traffic while pretending to be the other side (to the client it looks like “the server,” to the server it looks like “the client”).
+- Proxies can reside on the client’s local server or anywhere between the client and the remote servers.
+
+#### Key Capabilities
+- Can make routing decisions (which backend to hit).
+- Can add/remove/transform headers and sometimes body content.
+- Can cache or short‑circuit a request (serve from cache, return error, do a redirect).
+- Can enforce security (auth, rate limits, IP allow/deny, TLS termination).
+- The proxy can provide a stable external contract while you refactor internals (split a monolith, change URLs, migrate versions).
+- The proxy is a natural place for centralized logging, metrics, tracing, and rate‑limiting, because it sees every request.
+- Gradual rollouts (traffic shadowing, canary releases) by controlling routing rules in the proxy.
+
+#### Forward Proxy
+- Client → Forward proxy → Internet servers.
+- Example: Corporate proxies, VPNs, etc.
+
+#### Reverse Proxy
+- Nginx/Envoy/HAProxy in front of your web/app servers. It hides servers from clients and becomes the “public face” of your system.
+
+#### Reverse proxy vs load balancer vs API gateway
+- **Reverse proxy**
+    - Terminates TLS, forwards HTTP(S) to one or more backends.
+    - Handles basic routing (e.g., /images → image service, /api → API service).
+- **Load balancer**
+    - distribute traffic across multiple instances for availability and performance.
+- **API gateway**
+    - A specialized reverse proxy for APIs and microservices.
+    - Authentication, rate limiting, request/response transformation, versioning, and sometimes caching at the API level.
+- Often, a single product is all three: an API gateway is usually implemented as a reverse proxy with load‑balancing and extra API‑specific features.
+
+-----
+
+### Redundancy and Replication
+- Redundancy is about having extra capacity (servers, network links, power supplies, etc.) ready so that if any one element fails, the service keeps running.
+- Replication means sharing information to ensure consistency between redundant resources, such as software or hardware components, to improve reliability, fault-tolerance, or accessibility.
+    - Replication is widely used in many database management systems (DBMS), usually with a master-slave relationship between the original and the copies.
+- Design concerns: health checks and failover logic, avoiding single points of failure (e.g., a single load balancer), and ensuring capacity headroom so remaining nodes can absorb load when one fails.
