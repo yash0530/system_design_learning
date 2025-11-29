@@ -1,5 +1,4 @@
-# System Design Concepts
-
+# System Design Concept Notes
 
 ## Basics
 
@@ -38,7 +37,6 @@
     - Round Robin
     - Weighted Round Robin
     - IP Hash
-
 
 ## Caching
 - Caches take advantage of the locality of reference principle: recently requested data is likely to be requested again.
@@ -85,7 +83,6 @@
 - Last In First Out (LIFO)
 - Least Frequently Used (LFU)
 - Random Replacement (RR)
-
 
 ## Data Partitioning
 - Data partitioning is a technique to break up a big database (DB) into many smaller parts.
@@ -143,8 +140,6 @@
 - Dense Index; Sparse Index
 - Bitmap Index; Reverse Index; Hash Index; Filtered Index; Function-based Index; Spatial Index
 
-
-
 ## Proxies
 - A proxy server is a piece of *software or hardware* that acts as an intermediary, that can observe, modify, block, or route that traffic while pretending to be the other side (to the client it looks like “the server,” to the server it looks like “the client”).
 - Proxies can reside on the client’s local server or anywhere between the client and the remote servers.
@@ -175,7 +170,6 @@
     - A specialized reverse proxy for APIs and microservices.
     - Authentication, rate limiting, request/response transformation, versioning, and sometimes caching at the API level.
 - Often, a single product is all three: an API gateway is usually implemented as a reverse proxy with load‑balancing and extra API‑specific features.
-
 
 ## Redundancy and Replication
 
@@ -216,5 +210,57 @@
     - If any higher-ID node responds, P knows it lost; that higher node now runs its own election (asking nodes with ID higher than it), and so on.
     - Eventually the highest-ID alive node wins and broadcasts that it is the new leader.
 
-
 ## SQL vs NoSQL
+
+### NoSQL
+- **Key-Value Stores**
+    - Data is stored in an array of key-value pairs
+    - Example: Redis, Voldemort, and Dynamo
+- **Document Databases**
+    - Data is stored in documents (instead of rows and columns in a table) and these documents are grouped together in collections.
+    - Each document can have an entirely different structure.
+    - Example: MongoDB, CouchDB, and Firebase
+- **Wide-Column Databases**
+    - A column family is roughly like a table, but each row can have a different set of columns, and new columns can be added at any time without changing a global schema.
+    - Columnar databases are best suited for analyzing large datasets, distributed workloads where you need to scale horizontally across many machines.
+    - Commonly used for analytics, metrics, log aggregation, and recommendation features because they can efficiently handle billions of rows and high write throughput.
+    - Example: Cassandra, HBase, Bigtable
+- **Graph Databases**
+    - Data is saved in graph structures with nodes (entities), properties (information about the entities), and lines (connections between the entities)
+    - Both nodes and edges can have properties (key–value pairs) that store information like timestamps, weights, or labels, which makes queries about relationships very expressive and efficient.
+    - Example: Neo4j, JanusGraph
+
+### High level Differences
+- Storage - Discussed above
+- Schema
+    - SQL: The schema can be altered later, but it involves modifying the whole database and going offline.
+- Querying
+- Scalability
+    - SQL databases are vertically scalable. (Challenging to scale horizontally: Spanner)
+    - NoSQL databases are horizontally scalable. Any cheap commodity hardware or cloud instances can host NoSQL databases.
+- Reliability or ACID Compliancy (Atomicity, Consistency, Isolation, Durability)
+    - SQL: ACID Compliant
+    - NoSQL: Offer looser, to gain high availability, partition tolerance, and horizontal scalability.
+        - Eventual consistency: all replicas converge if no new updates happen, but reads can be stale for a while.​
+        - Tunable consistency: clients can choose how many replicas must acknowledge a read/write (e.g., QUORUM in Cassandra) to trade off latency vs. consistency per operation.
+
+### Reasons for choosing SQL
+- ACID compliance
+- Your data is structured and unchanging + vertical scalability is okay
+
+### Reasons for choosing NoSQL
+- When all the other components of our application are fast and seamless, NoSQL databases prevent data from being the bottleneck.
+- Big data is contributing to a large success for NoSQL databases.
+- Making the most of cloud computing and storage, often cheaper and easier to scale.
+- Rapid development. NoSQL is extremely useful for rapid development as it doesn’t need to be prepped ahead of time.
+    - Making frequent updates to the data structure without a lot of downtime between versions.
+
+## CAP Theorem
+- CAP theorem states that it is impossible for a distributed software system to simultaneously provide more than two out of three of the following guarantees.
+- Consistency: All nodes see the same data at the same time.
+    - Consistency is achieved by updating several nodes before allowing further reads.
+- Availability: All nodes respond to reads and writes.
+    - Availability is achieved by replicating the data across different servers.
+- Partition Tolerance: A system that is partition-tolerant can sustain any amount of network failure that doesn’t result in a failure of the entire network.
+    - Data is sufficiently replicated across combinations of nodes and networks to keep the system up through intermittent outages.
+
