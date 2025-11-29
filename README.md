@@ -1,6 +1,5 @@
 # System Design Concepts
 
------
 
 ## Basics
 
@@ -23,7 +22,6 @@
 ### Serviceability & Maintainability
 - Serviceability or manageability is the simplicity and speed with which a system can be repaired or maintained; if the time to fix a failed system increases, then availability will decrease.
 
------
 
 ## Load Balancing
 - It helps to spread the traffic across a cluster of servers to improve responsiveness and availability of applications, websites or databases
@@ -41,7 +39,6 @@
     - Weighted Round Robin
     - IP Hash
 
------
 
 ## Caching
 - Caches take advantage of the locality of reference principle: recently requested data is likely to be requested again.
@@ -89,7 +86,6 @@
 - Least Frequently Used (LFU)
 - Random Replacement (RR)
 
------
 
 ## Data Partitioning
 - Data partitioning is a technique to break up a big database (DB) into many smaller parts.
@@ -139,7 +135,6 @@
 - **Rebalancing**
     - Scheme like directory based partitioning makes rebalancing easier at the cost of increasing the complexity. It also creates a new single point of failure (lookup service/database).
 
------
 
 ## Indexes
 - Index on a column - we store that column and a pointer to the whole row in the index.
@@ -149,7 +144,6 @@
 - Bitmap Index; Reverse Index; Hash Index; Filtered Index; Function-based Index; Spatial Index
 
 
------
 
 ## Proxies
 - A proxy server is a piece of *software or hardware* that acts as an intermediary, that can observe, modify, block, or route that traffic while pretending to be the other side (to the client it looks like “the server,” to the server it looks like “the client”).
@@ -182,7 +176,6 @@
     - Authentication, rate limiting, request/response transformation, versioning, and sometimes caching at the API level.
 - Often, a single product is all three: an API gateway is usually implemented as a reverse proxy with load‑balancing and extra API‑specific features.
 
------
 
 ## Redundancy and Replication
 
@@ -223,6 +216,5 @@
     - If any higher-ID node responds, P knows it lost; that higher node now runs its own election (asking nodes with ID higher than it), and so on.
     - Eventually the highest-ID alive node wins and broadcasts that it is the new leader.
 
------
 
 ## SQL vs NoSQL
