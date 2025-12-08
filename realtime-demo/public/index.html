@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Long Polling vs WebSockets vs SSE - Interactive Demo</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <header>
+        <h1>🔄 Real-Time Communication Patterns</h1>
+        <p class="subtitle">Interactive comparison of Long Polling, WebSockets, and Server-Sent Events</p>
+    </header>
+
+    <main>
+        <!-- LONG POLLING PANEL -->
+        <section class="panel" id="long-polling-panel">
+            <div class="panel-header">
+                <h2>📡 Long Polling</h2>
+                <span class="status disconnected" id="lp-status">Stopped</span>
+            </div>
+
+            <div class="info-box">
+                <h3>How it works:</h3>
+                <div class="flow-diagram">
+                    <div class="step">1️⃣ Client sends request</div>
+                    <div class="arrow">↓</div>
+                    <div class="step highlight">2️⃣ Server WAITS...</div>
+                    <div class="arrow">↓</div>
+                    <div class="step">3️⃣ Server responds with data</div>
+                    <div class="arrow">↓</div>
+                    <div class="step">4️⃣ Client immediately requests again</div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button id="lp-start" class="btn-start">▶ Start Polling</button>
+                <button id="lp-stop" class="btn-stop" disabled>⏹ Stop</button>
+            </div>
+
+            <div class="messages-container">
+                <h3>Messages <span class="counter" id="lp-counter">0</span></h3>
+                <div class="messages" id="lp-messages"></div>
+            </div>
+
+            <div class="explanation">
+                <strong>Best for:</strong> Simple compatibility, infrequent updates, legacy systems
+            </div>
+        </section>
+
+        <!-- WEBSOCKET PANEL -->
+        <section class="panel" id="websocket-panel">
+            <div class="panel-header">
+                <h2>⚡ WebSocket</h2>
+                <span class="status disconnected" id="ws-status">Disconnected</span>
+            </div>
+
+            <div class="info-box">
+                <h3>How it works:</h3>
+                <div class="flow-diagram">
+                    <div class="step">1️⃣ HTTP Upgrade handshake</div>
+                    <div class="arrow">↓</div>
+                    <div class="step highlight">2️⃣ Persistent connection opens</div>
+                    <div class="arrow bidirectional">⟷</div>
+                    <div class="step">3️⃣ Both sides send anytime!</div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button id="ws-connect" class="btn-start">🔌 Connect</button>
+                <button id="ws-disconnect" class="btn-stop" disabled>❌ Disconnect</button>
+            </div>
+
+            <div class="input-group">
+                <input type="text" id="ws-input" placeholder="Type a message..." disabled>
+                <button id="ws-send" class="btn-send" disabled>Send</button>
+            </div>
+
+            <div class="messages-container">
+                <h3>Messages <span class="counter" id="ws-counter">0</span></h3>
+                <div class="messages" id="ws-messages"></div>
+            </div>
+
+            <div class="explanation">
+                <strong>Best for:</strong> Chat, gaming, live collaboration, trading
+            </div>
+        </section>
+
+        <!-- SSE PANEL -->
+        <section class="panel" id="sse-panel">
+            <div class="panel-header">
+                <h2>📨 Server-Sent Events</h2>
+                <span class="status disconnected" id="sse-status">Disconnected</span>
+            </div>
+
+            <div class="info-box">
+                <h3>How it works:</h3>
+                <div class="flow-diagram">
+                    <div class="step">1️⃣ Client opens EventSource</div>
+                    <div class="arrow">↓</div>
+                    <div class="step highlight">2️⃣ Server keeps connection open</div>
+                    <div class="arrow one-way">→ → →</div>
+                    <div class="step">3️⃣ Server pushes data anytime</div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button id="sse-connect" class="btn-start">📥 Subscribe</button>
+                <button id="sse-disconnect" class="btn-stop" disabled>🔕 Unsubscribe</button>
+            </div>
+
+            <div class="messages-container">
+                <h3>Messages <span class="counter" id="sse-counter">0</span></h3>
+                <div class="messages" id="sse-messages"></div>
+            </div>
+
+            <div class="explanation">
+                <strong>Best for:</strong> News feeds, notifications, stock tickers
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="comparison-table">
+            <h2>📊 Quick Comparison</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>Long Polling</th>
+                        <th>WebSocket</th>
+                        <th>SSE</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Direction</td>
+                        <td>Request-Response</td>
+                        <td class="highlight-good">↔ Bidirectional</td>
+                        <td>→ Server to Client</td>
+                    </tr>
+                    <tr>
+                        <td>Latency</td>
+                        <td class="highlight-bad">High</td>
+                        <td class="highlight-good">Very Low</td>
+                        <td>Low</td>
+                    </tr>
+                    <tr>
+                        <td>Complexity</td>
+                        <td class="highlight-good">Simple</td>
+                        <td class="highlight-bad">Complex</td>
+                        <td>Simple</td>
+                    </tr>
+                    <tr>
+                        <td>Protocol</td>
+                        <td>HTTP</td>
+                        <td>WS (upgraded HTTP)</td>
+                        <td>HTTP</td>
+                    </tr>
+                    <tr>
+                        <td>Auto-reconnect</td>
+                        <td>Manual</td>
+                        <td>Manual</td>
+                        <td class="highlight-good">Built-in</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </footer>
+
+    <script>
+        // ═══════════════════════════════════════════════════════════════════════════
+        // LONG POLLING IMPLEMENTATION
+        // ═══════════════════════════════════════════════════════════════════════════
+        let lpActive = false;
+        let lpLastId = 0;
+        let lpCount = 0;
+
+        const lpStatus = document.getElementById('lp-status');
+        const lpMessages = document.getElementById('lp-messages');
+        const lpCounter = document.getElementById('lp-counter');
+        const lpStart = document.getElementById('lp-start');
+        const lpStop = document.getElementById('lp-stop');
+
+        async function longPoll() {
+            if (!lpActive) return;
+
+            try {
+                lpStatus.textContent = 'Waiting...';
+                lpStatus.className = 'status waiting';
+
+                // This is the "long" part - server holds connection
+                const response = await fetch(`/api/long-polling?lastId=${lpLastId}`);
+                const data = await response.json();
+
+                lpLastId = data.id;
+                lpCount++;
+                lpCounter.textContent = lpCount;
+                addMessage(lpMessages, data, 'received');
+
+                lpStatus.textContent = 'Polling...';
+                lpStatus.className = 'status connected';
+
+                // Immediately poll again!
+                if (lpActive) {
+                    longPoll();
+                }
+            } catch (error) {
+                if (lpActive) {
+                    lpStatus.textContent = 'Error - Retrying...';
+                    lpStatus.className = 'status error';
+                    setTimeout(longPoll, 1000);
+                }
+            }
+        }
+
+        lpStart.onclick = () => {
+            lpActive = true;
+            lpStart.disabled = true;
+            lpStop.disabled = false;
+            longPoll();
+        };
+
+        lpStop.onclick = () => {
+            lpActive = false;
+            lpStart.disabled = false;
+            lpStop.disabled = true;
+            lpStatus.textContent = 'Stopped';
+            lpStatus.className = 'status disconnected';
+        };
+
+        // ═══════════════════════════════════════════════════════════════════════════
+        // WEBSOCKET IMPLEMENTATION
+        // ═══════════════════════════════════════════════════════════════════════════
+        let ws = null;
+        let wsCount = 0;
+
+        const wsStatus = document.getElementById('ws-status');
+        const wsMessages = document.getElementById('ws-messages');
+        const wsCounter = document.getElementById('ws-counter');
+        const wsConnect = document.getElementById('ws-connect');
+        const wsDisconnect = document.getElementById('ws-disconnect');
+        const wsInput = document.getElementById('ws-input');
+        const wsSend = document.getElementById('ws-send');
+
+        wsConnect.onclick = () => {
+            // Note: We use the HTTP URL but request WebSocket upgrade
+            ws = new WebSocket(`ws://${window.location.host}/api/websocket`);
+
+            ws.onopen = () => {
+                wsStatus.textContent = 'Connected';
+                wsStatus.className = 'status connected';
+                wsConnect.disabled = true;
+                wsDisconnect.disabled = false;
+                wsInput.disabled = false;
+                wsSend.disabled = false;
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                wsCount++;
+                wsCounter.textContent = wsCount;
+                addMessage(wsMessages, data, 'received');
+            };
+
+            ws.onclose = () => {
+                wsStatus.textContent = 'Disconnected';
+                wsStatus.className = 'status disconnected';
+                wsConnect.disabled = false;
+                wsDisconnect.disabled = true;
+                wsInput.disabled = true;
+                wsSend.disabled = true;
+            };
+
+            ws.onerror = () => {
+                wsStatus.textContent = 'Error';
+                wsStatus.className = 'status error';
+            };
+        };
+
+        wsDisconnect.onclick = () => {
+            if (ws) ws.close();
+        };
+
+        wsSend.onclick = sendWsMessage;
+        wsInput.onkeypress = (e) => {
+            if (e.key === 'Enter') sendWsMessage();
+        };
+
+        function sendWsMessage() {
+            const message = wsInput.value.trim();
+            if (message && ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(message);
+                wsInput.value = '';
+
+                // Show sent message
+                addMessage(wsMessages, {
+                    content: message,
+                    timestamp: new Date().toISOString(),
+                    explanation: 'You sent this message to server'
+                }, 'sent');
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════════
+        // SERVER-SENT EVENTS IMPLEMENTATION
+        // ═══════════════════════════════════════════════════════════════════════════
+        let eventSource = null;
+        let sseCount = 0;
+
+        const sseStatus = document.getElementById('sse-status');
+        const sseMessages = document.getElementById('sse-messages');
+        const sseCounter = document.getElementById('sse-counter');
+        const sseConnect = document.getElementById('sse-connect');
+        const sseDisconnect = document.getElementById('sse-disconnect');
+
+        sseConnect.onclick = () => {
+            // EventSource is the browser's built-in SSE API
+            eventSource = new EventSource('/api/sse');
+
+            eventSource.onopen = () => {
+                sseStatus.textContent = 'Subscribed';
+                sseStatus.className = 'status connected';
+                sseConnect.disabled = true;
+                sseDisconnect.disabled = false;
+            };
+
+            eventSource.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                sseCount++;
+                sseCounter.textContent = sseCount;
+                addMessage(sseMessages, data, 'received');
+            };
+
+            eventSource.onerror = () => {
+                sseStatus.textContent = 'Reconnecting...';
+                sseStatus.className = 'status waiting';
+                // Note: EventSource auto-reconnects!
+            };
+        };
+
+        sseDisconnect.onclick = () => {
+            if (eventSource) {
+                eventSource.close();
+                sseStatus.textContent = 'Disconnected';
+                sseStatus.className = 'status disconnected';
+                sseConnect.disabled = false;
+                sseDisconnect.disabled = true;
+            }
+        };
+
+        // ═══════════════════════════════════════════════════════════════════════════
+        // HELPER FUNCTIONS
+        // ═══════════════════════════════════════════════════════════════════════════
+        function addMessage(container, data, type) {
+            const msg = document.createElement('div');
+            msg.className = `message ${type}`;
+
+            const time = new Date(data.timestamp).toLocaleTimeString();
+
+            msg.innerHTML = `
+                <div class="message-header">
+                    <span class="message-time">${time}</span>
+                    ${data.id ? `<span class="message-id">#${data.id}</span>` : ''}
+                </div>
+                <div class="message-content">${data.content}</div>
+                ${data.explanation ? `<div class="message-explanation">💡 ${data.explanation}</div>` : ''}
+            `;
+
+            container.insertBefore(msg, container.firstChild);
+
+            // Keep only last 10 messages
+            while (container.children.length > 10) {
+                container.removeChild(container.lastChild);
+            }
+        }
+    </script>
+</body>
+</html>

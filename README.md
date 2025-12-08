@@ -256,6 +256,8 @@
     - Making frequent updates to the data structure without a lot of downtime between versions.
 
 ## CAP Theorem
+- CAP is saying: in the presence of a network partition, you must sacrifice either strict consistency or full availability; you cannot keep both at the same time in a general distributed store.​
+
 - CAP theorem states that it is impossible for a distributed software system to simultaneously provide more than two out of three of the following guarantees.
 - Consistency: All nodes see the same data at the same time.
     - Consistency is achieved by updating several nodes before allowing further reads.
@@ -264,3 +266,31 @@
 - Partition Tolerance: A system that is partition-tolerant can sustain any amount of network failure that doesn’t result in a failure of the entire network.
     - Data is sufficiently replicated across combinations of nodes and networks to keep the system up through intermittent outages.
 
+## Consistent Hashing
+- It maps both keys and servers to a virtual "ring", and a key is assigned to the first server it encounters moving clockwise around the ring.
+- Node and keys are both hashed and mapped to the ring.
+- Virtual nodes for better distribution.
+- Self balancing binary search tree for searching nodes.
+
+## Long Polling vs WebSockets vs Server Sent Events
+- Popular communication protocols between a client like a web browser and a web server.
+
+### AJAX 
+* The client periodically polls the server for new data using standard HTTP requests.
+
+### Long Polling
+* The browser sends an HTTP request and the server holds it open until it has new data (or times out), then responds and closes it. The browser then immediately sends another request. So it’s still “request/response,” just with very slow responses.
+* Complexity: Simple to build; hard to scale well
+
+### WebSockets
+* WebSocket provides Full duplex communication channels over a single TCP connection, client establishes a WebSocket connection through a process known as the WebSocket handshake.
+    * Browser and server upgrade an HTTP connection to the WebSocket protocol.
+* The server and client can exchange data in both directions at any time, with lower overheads, facilitating real-time data transfer.
+* Standardized way for the server to send content to the browser without being asked by the client - back and forth while keeping the connection open.
+* Best for: Chats, games, collaborative apps
+* Complexity: More complex infra/protocol handling
+
+### Server Sent Events (SSEs)
+* Browser opens a special HTTP connection (using EventSource) that the server keeps open and continuously streams text events down to the browser. Only the server can push data; the browser cannot send messages back on that same channel.
+* Live feeds, notifications, dashboards
+* Complexity: Moderate; simpler than WebSockets
