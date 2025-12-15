@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Partitioning | System Design Mastery</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/main.css">
+    <style>
+        .partition-viz {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+
+        .partition {
+            min-width: 120px;
+            padding: 1rem;
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border-light);
+            border-radius: var(--radius-lg);
+            text-align: center;
+        }
+
+        .partition-name {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .partition-data {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.25rem;
+            justify-content: center;
+        }
+
+        .data-item {
+            padding: 0.25rem 0.5rem;
+            background: var(--accent-primary);
+            border-radius: var(--radius-sm);
+            font-size: 0.75rem;
+            color: white;
+        }
+
+        .ring-container {
+            position: relative;
+            width: 320px;
+            height: 320px;
+            margin: 0 auto;
+        }
+
+        .ring-circle {
+            position: absolute;
+            inset: 10px;
+            border: 2px dashed var(--border-light);
+            border-radius: 50%;
+        }
+
+        .ring-node {
+            position: absolute;
+            width: 45px;
+            height: 45px;
+            background: var(--accent-gradient);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            transform: translate(-50%, -50%);
+            z-index: 2;
+        }
+
+        .ring-node:hover {
+            transform: translate(-50%, -50%) scale(1.15);
+        }
+
+        .ring-key {
+            position: absolute;
+            width: 28px;
+            height: 28px;
+            background: var(--warning);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: 600;
+            transform: translate(-50%, -50%);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="bg-pattern"></div>
+    <div class="bg-grid"></div>
+    <nav class="nav">
+        <div class="container nav-content"><a href="../index.html" class="nav-logo">System Design Mastery</a></div>
+    </nav>
+
+    <div class="lesson-container">
+        <div class="container">
+            <header class="lesson-header">
+                <div class="lesson-meta"><span class="lesson-number">🗂️</span><span class="tag">Module 4</span></div>
+                <h1>Data Partitioning</h1>
+                <p style="color: var(--text-secondary); max-width: 700px;">When data grows too large for a single
+                    machine, we split it across multiple nodes. This is partitioning (or sharding).</p>
+            </header>
+
+            <div class="lesson-content">
+                <section class="lesson-section">
+                    <h3>Why Partition?</h3>
+                    <div class="concept-grid">
+                        <div class="concept-card glass-card">
+                            <div class="concept-icon">📊</div>
+                            <h4>Scale Beyond One Machine</h4>
+                            <p>No single server can hold petabytes of data or handle millions of queries/second.</p>
+                        </div>
+                        <div class="concept-card glass-card">
+                            <div class="concept-icon">⚡</div>
+                            <h4>Parallel Processing</h4>
+                            <p>Split work across nodes for faster query execution.</p>
+                        </div>
+                        <div class="concept-card glass-card">
+                            <div class="concept-icon">🛡️</div>
+                            <h4>Isolation</h4>
+                            <p>One partition's issues don't affect others.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="lesson-section">
+                    <h3>Partitioning Methods</h3>
+                    <div class="tabs">
+                        <button class="tab active" onclick="showPartitionTab('horizontal')">Horizontal
+                            (Sharding)</button>
+                        <button class="tab" onclick="showPartitionTab('vertical')">Vertical</button>
+                        <button class="tab" onclick="showPartitionTab('directory')">Directory-Based</button>
+                    </div>
+                    <div class="tab-content active" id="tab-horizontal">
+                        <h4>Horizontal Partitioning (Sharding)</h4>
+                        <p>Different <strong>rows</strong> go to different machines. Each shard has the same schema but
+                            different data.</p>
+                        <div class="demo-container" style="margin-top: 1rem;">
+                            <div class="controls" style="margin-bottom: 1rem;">
+                                <input type="text" id="addUserInput" placeholder="New User Name" class="input"
+                                    style="width: 150px;">
+                                <button class="btn btn-primary" onclick="addUser()">Add User</button>
+                                <button class="btn btn-secondary" onclick="resetUsers()">Reset</button>
+                            </div>
+                            <div class="demo-body">
+                                <div class="partition-viz" id="horizontalViz">
+                                    <div class="partition" id="shard0">
+                                        <div class="partition-name">Shard 1 (ID % 3 == 0)</div>
+                                        <div class="partition-data">
+                                            <!-- users handled by js -->
+                                        </div>
+                                    </div>
+                                    <div class="partition" id="shard1">
+                                        <div class="partition-name">Shard 2 (ID % 3 == 1)</div>
+                                        <div class="partition-data">
+                                            <!-- users handled by js -->
+                                        </div>
+                                    </div>
+                                    <div class="partition" id="shard2">
+                                        <div class="partition-name">Shard 3 (ID % 3 == 2)</div>
+                                        <div class="partition-data">
+                                            <!-- users handled by js -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="info-box tip">
+                            <div class="info-box-title">Example</div>
+                            <p>Shard by user_id: Users 1-1M → Shard 1, Users 1M-2M → Shard 2, etc.</p>
+                        </div>
+                    </div>
+                    <div class="tab-content" id="tab-vertical">
+                        <h4>Vertical Partitioning</h4>
+                        <p>Different <strong>columns</strong> go to different tables/machines. Split a wide table by
+                            feature.</p>
+                        <div class="demo-container" style="margin-top: 1rem;">
+                            <div class="demo-body">
+                                <div class="partition-viz">
+                                    <div class="partition" style="border-color: var(--success);">
+                                        <div class="partition-name">Users Core</div>
+                                        <div class="partition-data"><span class="data-item">id</span><span
+                                                class="data-item">name</span><span class="data-item">email</span></div>
+                                    </div>
+                                    <div class="partition" style="border-color: var(--info);">
+                                        <div class="partition-name">Users Profile</div>
+                                        <div class="partition-data"><span class="data-item">id</span><span
+                                                class="data-item">bio</span><span class="data-item">avatar</span></div>
+                                    </div>
+                                    <div class="partition" style="border-color: var(--warning);">
+                                        <div class="partition-name">Users Settings</div>
+                                        <div class="partition-data"><span class="data-item">id</span><span
+                                                class="data-item">prefs</span><span class="data-item">theme</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab-content" id="tab-directory">
+                        <h4>Directory-Based Partitioning</h4>
+                        <p>A lookup service maintains a mapping from key → partition. Flexible but adds another
+                            component.</p>
+                        <div class="info-box warning">
+                            <div class="info-box-title">Trade-off</div>
+                            <p>The directory becomes a single point of failure and potential bottleneck. Usually backed
+                                by a highly available store like ZooKeeper.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="lesson-section">
+                    <h3>Consistent Hashing</h3>
+                    <p>The key technique for distributing data across nodes with minimal redistribution when nodes
+                        change.</p>
+                    <div class="demo-container">
+                        <div class="demo-header"><span class="demo-dot red"></span><span
+                                class="demo-dot yellow"></span><span class="demo-dot green"></span><span
+                                class="demo-title">Hash Ring Visualization</span></div>
+                        <div class="demo-body">
+                            <div class="controls">
+                                <button class="btn btn-primary" onclick="addNode()">Add Node</button>
+                                <button class="btn btn-secondary" onclick="removeNode()">Remove Node</button>
+                                <button class="btn btn-secondary" onclick="addKey()">Add Key</button>
+                                <button class="btn btn-secondary" onclick="resetRing()">Reset</button>
+                            </div>
+                            <div class="ring-container" id="ringContainer">
+                                <div class="ring-circle"></div>
+                            </div>
+                            <div id="ringInfo"
+                                style="text-align: center; margin-top: 1rem; color: var(--text-secondary);"></div>
+                        </div>
+                    </div>
+                    <div class="info-box info" style="margin-top: 1rem;">
+                        <div class="info-box-title">How It Works</div>
+                        <p>Nodes and keys are hashed onto a ring. Each key is assigned to the first node encountered
+                            clockwise. When a node is added/removed, only keys between it and its predecessor need to
+                            move.</p>
+                    </div>
+                </section>
+
+                <section class="lesson-section">
+                    <h3>Partitioning Problems</h3>
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>Problem</th>
+                                <th>Description</th>
+                                <th>Solution</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Cross-shard Joins</strong></td>
+                                <td>Joining data across shards is expensive</td>
+                                <td>Denormalization, application-level joins</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Referential Integrity</strong></td>
+                                <td>Foreign keys don't work across shards</td>
+                                <td>Enforce in application code</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Hot Spots</strong></td>
+                                <td>Some shards get more traffic</td>
+                                <td>Better shard keys, virtual nodes</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Rebalancing</strong></td>
+                                <td>Adding nodes requires data movement</td>
+                                <td>Consistent hashing, directory-based</td>
+                            </tr>
+                        </tbody>
+                </section>
+
+                <!-- Shard Key Selection -->
+                <section class="lesson-section">
+                    <h3>Choosing a Shard Key</h3>
+                    <p>The shard key determines how data is distributed. A bad choice leads to hot spots.</p>
+                    <div class="concept-grid">
+                        <div class="concept-card glass-card">
+                            <div class="concept-icon">✅</div>
+                            <h4>Good Shard Keys</h4>
+                            <ul style="margin: 0.5rem 0 0 1.5rem; font-size: 0.9rem;">
+                                <li>High cardinality (many unique values)</li>
+                                <li>Even distribution of requests</li>
+                                <li>Frequently used in queries</li>
+                                <li>Example: user_id, tenant_id</li>
+                            </ul>
+                        </div>
+                        <div class="concept-card glass-card">
+                            <div class="concept-icon">❌</div>
+                            <h4>Bad Shard Keys</h4>
+                            <ul style="margin: 0.5rem 0 0 1.5rem; font-size: 0.9rem;">
+                                <li>Monotonically increasing (timestamps)</li>
+                                <li>Low cardinality (status, country)</li>
+                                <li>Frequently updated</li>
+                                <li>Example: created_at, status</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="info-box info" style="margin-top: 1rem;">
+                        <div class="info-box-title">🏢 Used By</div>
+                        <p>Discord shards by guild_id. MongoDB supports compound shard keys. Vitess (YouTube's MySQL
+                            sharding) uses routing rules.</p>
+                    </div>
+                </section>
+
+                <!-- Quiz -->
+                <section class="lesson-section">
+                    <h3>Check Your Understanding</h3>
+                    <div class="quiz-container">
+                        <p class="quiz-question">
+                            You're sharding a social media database. Posts are read by user timelines. What's the best
+                            shard key?
+                        </p>
+                        <div class="quiz-options" id="partitionQuizOptions">
+                            <div class="quiz-option" onclick="checkPartitionAnswer(this, false)">created_at — posts are
+                                time-ordered</div>
+                            <div class="quiz-option" onclick="checkPartitionAnswer(this, true)">author_id — users read
+                                their own and followed users' posts</div>
+                            <div class="quiz-option" onclick="checkPartitionAnswer(this, false)">post_id — ensures
+                                uniqueness</div>
+                            <div class="quiz-option" onclick="checkPartitionAnswer(this, false)">content_hash —
+                                distributes evenly</div>
+                        </div>
+                        <div id="partitionQuizFeedback" style="margin-top: 1rem; display: none;"></div>
+                    </div>
+                </section>
+
+                <div class="lesson-nav">
+                    <a href="03-caching.html" class="nav-btn">← Caching</a>
+                    <a href="05-indexes.html" class="nav-btn">Indexes →</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let nodes = [], keys = [], nodeCounter = 0, keyCounter = 0;
+        const centerX = 160, centerY = 160, radius = 130;
+
+        function hashToAngle(id, isNode) {
+            const hash = (id * (isNode ? 137 : 97)) % 360;
+            return (hash / 360) * 2 * Math.PI - Math.PI / 2;
+        }
+
+        function renderRing() {
+            const container = document.getElementById('ringContainer');
+            container.querySelectorAll('.ring-node, .ring-key').forEach(el => el.remove());
+
+            nodes.forEach(n => {
+                const angle = hashToAngle(n.id, true);
+                const x = centerX + radius * Math.cos(angle);
+                const y = centerY + radius * Math.sin(angle);
+                const el = document.createElement('div');
+                el.className = 'ring-node';
+                el.textContent = 'N' + n.id;
+                el.style.left = x + 'px'; el.style.top = y + 'px';
+                container.appendChild(el);
+            });
+
+            keys.forEach(k => {
+                const angle = hashToAngle(k.id, false);
+                const x = centerX + (radius - 30) * Math.cos(angle);
+                const y = centerY + (radius - 30) * Math.sin(angle);
+                const el = document.createElement('div');
+                el.className = 'ring-key';
+                el.textContent = 'K' + k.id;
+                el.style.left = x + 'px'; el.style.top = y + 'px';
+                container.appendChild(el);
+            });
+
+            updateInfo();
+        }
+
+        function addNode() {
+            if (nodes.length >= 6) return;
+            nodes.push({ id: ++nodeCounter });
+            renderRing();
+        }
+
+        function removeNode() {
+            if (nodes.length === 0) return;
+            nodes.pop();
+            renderRing();
+        }
+
+        function addKey() {
+            if (keys.length >= 8) return;
+            keys.push({ id: ++keyCounter });
+            renderRing();
+        }
+
+        function resetRing() {
+            nodes = []; keys = []; nodeCounter = keyCounter = 0;
+            renderRing();
+        }
+
+        function updateInfo() {
+            const info = document.getElementById('ringInfo');
+            if (nodes.length === 0) { info.textContent = 'Add nodes to see the hash ring in action.'; return; }
+            const keyAssignments = keys.map(k => {
+                const keyAngle = hashToAngle(k.id, false);
+                let assigned = nodes[0];
+                let minDiff = Infinity;
+                nodes.forEach(n => {
+                    const nodeAngle = hashToAngle(n.id, true);
+                    let diff = nodeAngle - keyAngle;
+                    if (diff < 0) diff += 2 * Math.PI;
+                    if (diff < minDiff) { minDiff = diff; assigned = n; }
+                });
+                return `K${k.id}→N${assigned.id}`;
+            });
+            info.textContent = keys.length ? keyAssignments.join(', ') : `${nodes.length} nodes. Add keys to see assignments.`;
+        }
+
+        function showPartitionTab(id) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('tab-' + id).classList.add('active');
+        }
+
+        // Horizontal Partitioning Demo
+        let users = [];
+        let nextUserId = 1;
+
+        function initUsers() {
+            // Initial set of users
+            for (let i = 0; i < 9; i++) addUserInternal('User ' + nextUserId);
+        }
+
+        function addUser() {
+            const input = document.getElementById('addUserInput');
+            const name = input.value.trim() || ('User ' + nextUserId);
+            addUserInternal(name);
+            input.value = '';
+        }
+
+        function addUserInternal(name) {
+            const id = nextUserId++;
+            const shardIndex = id % 3;
+            // Shard 0 -> Shard 1 UI
+            const targetShard = document.getElementById('shard' + shardIndex).querySelector('.partition-data');
+
+            const el = document.createElement('span');
+            el.className = 'data-item';
+            el.textContent = `${name} (ID:${id})`;
+            el.style.animation = 'fade-in 0.5s';
+            targetShard.appendChild(el);
+
+            users.push({ id, name });
+        }
+
+        function resetUsers() {
+            nextUserId = 1;
+            users = [];
+            document.querySelectorAll('#horizontalViz .partition-data').forEach(el => el.innerHTML = '');
+            initUsers();
+        }
+
+        initUsers();
+
+        renderRing();
+
+        // Quiz
+        function checkPartitionAnswer(el, correct) {
+            const options = document.querySelectorAll('#partitionQuizOptions .quiz-option');
+            options.forEach(opt => { opt.style.pointerEvents = 'none'; opt.classList.remove('correct', 'incorrect'); });
+            el.classList.add(correct ? 'correct' : 'incorrect');
+            if (!correct) options[1].classList.add('correct');
+            const feedback = document.getElementById('partitionQuizFeedback');
+            feedback.style.display = 'block';
+            feedback.innerHTML = correct
+                ? '<div class="info-box tip"><div class="info-box-title">✅ Correct!</div><p>Author ID co-locates a user\'s posts on the same shard, making timeline fetches efficient. Timestamp-based sharding creates hot spots on recent data.</p></div>'
+                : '<div class="info-box warning"><div class="info-box-title">❌ Not quite</div><p>created_at causes all writes to hit the newest shard (hot spot). post_id and content_hash scatter related data across shards, requiring expensive fan-out queries.</p></div>';
+        }
+    </script>
+</body>
+
+</html>

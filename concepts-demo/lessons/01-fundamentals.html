@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Design Fundamentals | System Design Mastery</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="../styles/main.css">
+    <style>
+        /* Lesson-specific styles */
+        .scaling-demo {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        .scaling-type {
+            padding: 1.5rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-xl);
+        }
+
+        .scaling-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .scaling-servers {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            min-height: 120px;
+            padding: 1rem;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-lg);
+        }
+
+        .mini-server {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #1e293b, #334155);
+            border: 2px solid var(--accent-primary);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            transition: all 0.3s;
+        }
+
+        .mini-server.large {
+            width: 60px;
+            height: 60px;
+            font-size: 0.75rem;
+        }
+
+        .mini-server.xlarge {
+            width: 80px;
+            height: 80px;
+            font-size: 0.85rem;
+        }
+
+        .throughput-meter {
+            margin-top: 1rem;
+            padding: 0.75rem;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-md);
+            text-align: center;
+        }
+
+        .throughput-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .throughput-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-primary);
+        }
+
+        .principle-visual {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            margin: 1rem 0;
+        }
+
+        .pv-icon {
+            font-size: 2rem;
+        }
+
+        .pv-bar {
+            flex: 1;
+            height: 20px;
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .pv-fill {
+            height: 100%;
+            background: var(--accent-gradient);
+            transition: width 0.5s ease;
+        }
+
+        .formula-box {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            text-align: center;
+            margin: 1rem 0;
+        }
+
+        .formula {
+            font-family: var(--font-mono);
+            font-size: 1.2rem;
+            color: var(--accent-primary);
+        }
+
+        @media (max-width: 768px) {
+            .scaling-demo {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="bg-pattern"></div>
+    <div class="bg-grid"></div>
+
+    <nav class="nav">
+        <div class="container nav-content">
+            <a href="../index.html" class="nav-logo">System Design Mastery</a>
+            <ul class="nav-links">
+                <li><a href="../index.html#lessons">All Lessons</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="lesson-container">
+        <div class="container">
+            <!-- Header -->
+            <header class="lesson-header">
+                <div class="lesson-meta">
+                    <span class="lesson-number">🏗️</span>
+                    <span class="tag">Module 1</span>
+                </div>
+                <h1>System Design Fundamentals</h1>
+                <p style="color: var(--text-secondary); max-width: 700px;">
+                    Before we build complex distributed systems, we need to understand the core principles
+                    that define what makes a system "good." These concepts form the foundation for every
+                    architectural decision you'll make.
+                </p>
+            </header>
+
+            <!-- Content -->
+            <div class="lesson-content">
+
+                <!-- Scalability Section -->
+                <section class="lesson-section">
+                    <h3>Scalability: Growing With Demand</h3>
+                    <p style="margin-bottom: 1.5rem;">
+                        Scalability is a system's ability to handle growing amounts of work by adding resources.
+                        There are two fundamental approaches, each with distinct trade-offs.
+                    </p>
+
+                    <div class="scaling-demo">
+                        <!-- Vertical Scaling -->
+                        <div class="scaling-type">
+                            <div class="scaling-header">
+                                <h4>Vertical Scaling (Scale Up)</h4>
+                                <button class="btn btn-secondary" onclick="scaleVertical()"
+                                    style="padding: 0.5rem 1rem;">
+                                    ⬆️ Upgrade
+                                </button>
+                            </div>
+                            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">
+                                Add more power to your existing machine: more CPU, RAM, storage.
+                            </p>
+                            <div class="scaling-servers" id="verticalServers">
+                                <div class="mini-server" id="verticalServer">S1</div>
+                            </div>
+                            <div class="throughput-meter">
+                                <div class="throughput-label">Throughput</div>
+                                <div class="throughput-value" id="verticalThroughput">1,000 req/s</div>
+                            </div>
+                        </div>
+
+                        <!-- Horizontal Scaling -->
+                        <div class="scaling-type">
+                            <div class="scaling-header">
+                                <h4>Horizontal Scaling (Scale Out)</h4>
+                                <button class="btn btn-secondary" onclick="scaleHorizontal()"
+                                    style="padding: 0.5rem 1rem;">
+                                    ➕ Add Server
+                                </button>
+                            </div>
+                            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">
+                                Add more machines to your pool, distributing the load across them.
+                            </p>
+                            <div class="scaling-servers" id="horizontalServers">
+                                <div class="mini-server">S1</div>
+                            </div>
+                            <div class="throughput-meter">
+                                <div class="throughput-label">Throughput</div>
+                                <div class="throughput-value" id="horizontalThroughput">1,000 req/s</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="info-box tip" style="margin-top: 1.5rem;">
+                        <div class="info-box-title">💡 Key Insight</div>
+                        <p>
+                            Vertical scaling is simpler but has limits — you can only get so big a machine.
+                            Horizontal scaling is more complex (requires load balancing, data partitioning)
+                            but can scale infinitely.
+                        </p>
+                    </div>
+
+                    <table class="comparison-table" style="margin-top: 1.5rem;">
+                        <thead>
+                            <tr>
+                                <th>Aspect</th>
+                                <th>Vertical Scaling</th>
+                                <th>Horizontal Scaling</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Complexity</td>
+                                <td>Simple — just upgrade</td>
+                                <td>Complex — distributed systems</td>
+                            </tr>
+                            <tr>
+                                <td>Limit</td>
+                                <td>Hardware limits exist</td>
+                                <td>Theoretically unlimited</td>
+                            </tr>
+                            <tr>
+                                <td>Downtime</td>
+                                <td>Often requires restart</td>
+                                <td>Can add nodes live</td>
+                            </tr>
+                            <tr>
+                                <td>Cost</td>
+                                <td>Expensive at high end</td>
+                                <td>Commodity hardware</td>
+                            </tr>
+                            <tr>
+                                <td>Failure</td>
+                                <td>Single point of failure</td>
+                                <td>Redundancy built-in</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <!-- Reliability Section -->
+                <section class="lesson-section">
+                    <h3>Reliability: Working Under Pressure</h3>
+                    <p style="margin-bottom: 1rem;">
+                        Reliability is the probability that a system will perform its required functions without
+                        failure for a specified period. A reliable system continues to work correctly even when
+                        things go wrong — hardware faults, software bugs, or human errors.
+                    </p>
+
+                    <div class="formula-box">
+                        <div class="formula">Reliability = MTBF / (MTBF + MTTR)</div>
+                        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem;">
+                            MTBF = Mean Time Between Failures, MTTR = Mean Time To Recovery
+                        </p>
+                    </div>
+
+                    <p>
+                        <strong>Achieving reliability requires redundancy</strong> — eliminating every single
+                        point of failure so no single component can bring down the entire system.
+                    </p>
+
+                    <div class="principle-visual">
+                        <span class="pv-icon">🛡️</span>
+                        <div>
+                            <strong>Redundancy Trade-off</strong>
+                            <p style="font-size: 0.85rem; color: var(--text-muted);">
+                                Every redundant component adds cost but reduces failure probability
+                            </p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Availability Section -->
+                <section class="lesson-section">
+                    <h3>Availability: Being There When Needed</h3>
+                    <p style="margin-bottom: 1rem;">
+                        Availability measures the percentage of time a system is operational and accessible.
+                        It's often expressed as "nines" — 99.9% is "three nines," 99.99% is "four nines."
+                    </p>
+
+                    <div class="demo-container">
+                        <div class="demo-header">
+                            <span class="demo-dot red"></span>
+                            <span class="demo-dot yellow"></span>
+                            <span class="demo-dot green"></span>
+                            <span class="demo-title">Availability Calculator</span>
+                        </div>
+                        <div class="demo-body">
+                            <div class="controls">
+                                <div class="control-group">
+                                    <label class="control-label">Availability Level:</label>
+                                    <select class="select" id="availabilitySelect" onchange="updateAvailability()">
+                                        <option value="99">99% (Two Nines)</option>
+                                        <option value="99.9" selected>99.9% (Three Nines)</option>
+                                        <option value="99.99">99.99% (Four Nines)</option>
+                                        <option value="99.999">99.999% (Five Nines)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="metrics-grid" style="margin-top: 1rem;">
+                                <div class="metric-card">
+                                    <div class="metric-value" id="downtimeYear">8.76h</div>
+                                    <div class="metric-label">Downtime/Year</div>
+                                </div>
+                                <div class="metric-card">
+                                    <div class="metric-value" id="downtimeMonth">43.8m</div>
+                                    <div class="metric-label">Downtime/Month</div>
+                                </div>
+                                <div class="metric-card">
+                                    <div class="metric-value" id="downtimeWeek">10.1m</div>
+                                    <div class="metric-label">Downtime/Week</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="info-box warning" style="margin-top: 1.5rem;">
+                        <div class="info-box-title">⚠️ Reliability vs Availability</div>
+                        <p>
+                            A system can be <strong>available but not reliable</strong>. For example, a system
+                            that's up 99.9% of the time but gives incorrect results 10% of the time is available
+                            but unreliable. If a system is reliable, it is always available. But the reverse
+                            isn't true.
+                        </p>
+                    </div>
+                </section>
+
+                <!-- Efficiency Section -->
+                <section class="lesson-section">
+                    <h3>Efficiency: Speed & Throughput</h3>
+                    <p style="margin-bottom: 1rem;">
+                        Efficiency has two main dimensions: <strong>latency</strong> (how fast you get a response)
+                        and <strong>throughput</strong> (how many operations you can handle per unit time).
+                    </p>
+
+                    <div class="concept-grid">
+                        <div class="concept-card glass-card">
+                            <div class="concept-icon">⏱️</div>
+                            <h4>Latency (Response Time)</h4>
+                            <p>The delay to obtain the first item. Measured in milliseconds.</p>
+                            <div class="principle-visual" style="margin-top: 1rem;">
+                                <span class="pv-icon">📤</span>
+                                <div class="pv-bar">
+                                    <div class="pv-fill" style="width: 30%"></div>
+                                </div>
+                                <span style="font-size: 0.9rem; color: var(--success);">45ms</span>
+                            </div>
+                        </div>
+                        <div class="concept-card glass-card">
+                            <div class="concept-icon">📊</div>
+                            <h4>Throughput (Bandwidth)</h4>
+                            <p>Number of operations delivered per time unit. Measured in requests/second.</p>
+                            <div class="principle-visual" style="margin-top: 1rem;">
+                                <span class="pv-icon">📥</span>
+                                <div class="pv-bar">
+                                    <div class="pv-fill" style="width: 75%"></div>
+                                </div>
+                                <span style="font-size: 0.9rem; color: var(--success);">10k/s</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p style="margin-top: 1.5rem;">
+                        These metrics often trade off against each other. A system optimized for low latency
+                        (like a video game) might sacrifice throughput. A batch processing system might accept
+                        higher latency for massive throughput.
+                    </p>
+                </section>
+
+                <!-- Maintainability Section -->
+                <section class="lesson-section">
+                    <h3>Serviceability & Maintainability</h3>
+                    <p>
+                        How easily can the system be repaired, updated, and operated? The longer it takes to
+                        fix a failed system, the lower its availability. Good maintainability requires:
+                    </p>
+
+                    <div class="concept-grid" style="margin-top: 1rem;">
+                        <div class="concept-card glass-card">
+                            <div class="concept-icon">🔧</div>
+                            <h4>Operability</h4>
+                            <p>Easy for operations teams to monitor, maintain, and keep running smoothly.</p>
+                        </div>
+                        <div class="concept-card glass-card">
+                            <div class="concept-icon">📖</div>
+                            <h4>Simplicity</h4>
+                            <p>New engineers can understand the system without heroic effort.</p>
+                        </div>
+                        <div class="concept-card glass-card">
+                            <div class="concept-icon">🔄</div>
+                            <h4>Evolvability</h4>
+                            <p>Easy to make changes and adapt to new requirements over time.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Latency Numbers Section -->
+                <section class="lesson-section">
+                    <h3>Latency Numbers Every Developer Should Know</h3>
+                    <p>Understanding the relative speed of operations is crucial for making good design decisions.</p>
+                    <div class="demo-container">
+                        <div class="demo-header">
+                            <span class="demo-dot red"></span>
+                            <span class="demo-dot yellow"></span>
+                            <span class="demo-dot green"></span>
+                            <span class="demo-title">Latency Comparison (Log Scale)</span>
+                        </div>
+                        <div class="demo-body">
+                            <div id="latencyBars" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
+                            <div class="info-box tip" style="margin-top: 1rem;">
+                                <div class="info-box-title">💡 Key Insight</div>
+                                <p>Memory is ~100x faster than SSD. SSD is ~100x faster than network. Design your system
+                                    to hit the fastest storage possible!</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Real-World SLA Examples -->
+                <section class="lesson-section">
+                    <h3>Real-World SLA Examples</h3>
+                    <p>What do major cloud providers actually guarantee?</p>
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>Service</th>
+                                <th>SLA</th>
+                                <th>Annual Downtime</th>
+                                <th>Credit</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>AWS S3</strong></td>
+                                <td>99.9%</td>
+                                <td>8.7 hr</td>
+                                <td>10-25%</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Google Cloud SQL</strong></td>
+                                <td>99.95%</td>
+                                <td>4.4 hr</td>
+                                <td>10-50%</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Azure Cosmos DB</strong></td>
+                                <td>99.999%</td>
+                                <td>5 min</td>
+                                <td>10-100%</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Stripe API</strong></td>
+                                <td>99.99%</td>
+                                <td>52 min</td>
+                                <td>N/A</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="info-box warning" style="margin-top: 1rem;">
+                        <div class="info-box-title">⚠️ SLA ≠ Reality</div>
+                        <p>SLAs are legal contracts, not uptime guarantees. AWS S3 had a major outage in 2017 that
+                            lasted 4 hours — far exceeding their SLA. Always design for failure!</p>
+                    </div>
+                </section>
+
+                <!-- Quiz Section -->
+                <section class="lesson-section">
+                    <h3>Check Your Understanding</h3>
+                    <div class="quiz-container">
+                        <p class="quiz-question">
+                            A startup needs to handle 10x traffic growth over the next year while minimizing
+                            operational complexity. They have a simple monolithic application. What scaling
+                            approach should they start with?
+                        </p>
+                        <div class="quiz-options" id="quizOptions">
+                            <div class="quiz-option" onclick="checkAnswer(this, false)">
+                                Immediately implement horizontal scaling with Kubernetes
+                            </div>
+                            <div class="quiz-option" onclick="checkAnswer(this, true)">
+                                Start with vertical scaling, plan for horizontal when limits are reached
+                            </div>
+                            <div class="quiz-option" onclick="checkAnswer(this, false)">
+                                Build a complex microservices architecture from day one
+                            </div>
+                            <div class="quiz-option" onclick="checkAnswer(this, false)">
+                                Use both vertical and horizontal scaling simultaneously
+                            </div>
+                        </div>
+                        <div id="quizFeedback" style="margin-top: 1rem; display: none;"></div>
+                    </div>
+                </section>
+
+                <!-- Navigation -->
+                <div class="lesson-nav">
+                    <a href="../index.html" class="nav-btn">
+                        ← Back to Lessons
+                    </a>
+                    <a href="02-load-balancing.html" class="nav-btn">
+                        Load Balancing →
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/app.js"></script>
+    <script>
+        // Scaling demo state
+        let verticalLevel = 1;
+        let horizontalCount = 1;
+        const maxVertical = 3;
+        const maxHorizontal = 8;
+
+        function scaleVertical() {
+            if (verticalLevel >= maxVertical) {
+                alert('Hardware limit reached! Vertical scaling has physical limits.');
+                return;
+            }
+            verticalLevel++;
+            const server = document.getElementById('verticalServer');
+            const sizes = ['', 'large', 'xlarge'];
+            server.className = 'mini-server ' + sizes[verticalLevel - 1];
+
+            const throughput = 1000 * Math.pow(2, verticalLevel - 1);
+            document.getElementById('verticalThroughput').textContent =
+                throughput.toLocaleString() + ' req/s';
+        }
+
+        function scaleHorizontal() {
+            if (horizontalCount >= maxHorizontal) return;
+            horizontalCount++;
+
+            const container = document.getElementById('horizontalServers');
+            const server = document.createElement('div');
+            server.className = 'mini-server';
+            server.textContent = 'S' + horizontalCount;
+            server.style.animation = 'fade-in-up 0.3s ease';
+            container.appendChild(server);
+
+            const throughput = 1000 * horizontalCount;
+            document.getElementById('horizontalThroughput').textContent =
+                throughput.toLocaleString() + ' req/s';
+        }
+
+        function updateAvailability() {
+            const availability = parseFloat(document.getElementById('availabilitySelect').value);
+            const downtime = 100 - availability;
+
+            const minutesPerYear = 365.25 * 24 * 60;
+            const downtimeMinutes = (downtime / 100) * minutesPerYear;
+
+            const yearDowntime = downtimeMinutes;
+            const monthDowntime = downtimeMinutes / 12;
+            const weekDowntime = downtimeMinutes / 52;
+
+            function format(minutes) {
+                if (minutes >= 60) {
+                    return (minutes / 60).toFixed(2) + 'h';
+                } else if (minutes >= 1) {
+                    return minutes.toFixed(1) + 'm';
+                } else {
+                    return (minutes * 60).toFixed(0) + 's';
+                }
+            }
+
+            document.getElementById('downtimeYear').textContent = format(yearDowntime);
+            document.getElementById('downtimeMonth').textContent = format(monthDowntime);
+            document.getElementById('downtimeWeek').textContent = format(weekDowntime);
+        }
+
+        function checkAnswer(element, correct) {
+            const options = document.querySelectorAll('.quiz-option');
+            options.forEach(opt => {
+                opt.style.pointerEvents = 'none';
+                opt.classList.remove('correct', 'incorrect');
+            });
+
+            element.classList.add(correct ? 'correct' : 'incorrect');
+
+            // Highlight correct answer if wrong
+            if (!correct) {
+                options[1].classList.add('correct');
+            }
+
+            const feedback = document.getElementById('quizFeedback');
+            feedback.style.display = 'block';
+            feedback.innerHTML = correct
+                ? `<div class="info-box tip"><div class="info-box-title">✅ Correct!</div><p>
+            For a simple monolith with limited time, vertical scaling is quickest to implement. 
+            Once you hit hardware limits or need redundancy, that's when horizontal scaling 
+            becomes necessary.
+          </p></div>`
+                : `<div class="info-box warning"><div class="info-box-title">❌ Not quite</div><p>
+            Premature complexity can kill a startup. Start simple with vertical scaling — 
+            it requires no code changes. Plan for horizontal scaling, but don't over-engineer 
+            before you need to.
+          </p></div>`;
+        }
+
+        // Mark lesson as visited
+        if (window.SystemDesign) {
+            // Could track partial progress here
+        }
+
+        // Latency Numbers Visualization
+    const latencies = [
+            { name: 'L1 cache reference', ns: 0.5, color: '#10b981' },
+            { name: 'L2 cache reference', ns: 7, color: '#10b981' },
+            { name: 'Main memory reference', ns: 100, color: '#6366f1' },
+            { name: 'SSD random read', ns: 150000, color: '#f59e0b' },
+            { name: 'HDD seek', ns: 10000000, color: '#ef4444' },
+            { name: 'Network (Datacenter)', ns: 500000, color: '#8b5cf6' },
+            { name: 'Network (Internet/Global)', ns: 150000000, color: '#ec4899' }
+        ];
+
+        function renderLatencyBars() {
+            const container = document.getElementById('latencyBars');
+            if (!container) return;
+            // Use log10(ns + 1) to handle values < 1ns (which would give negative logs)
+            // and ensure 0 is the floor.
+            const maxLog = Math.log10(latencies[latencies.length - 1].ns + 1);
+            
+            container.innerHTML = latencies.map(l => {
+                const widthPct = (Math.log10(l.ns + 1) / maxLog) * 100;
+                const timeStr = l.ns >= 1000000 ? (l.ns / 1000000).toFixed(0) + 'ms' :
+                    l.ns >= 1000 ? (l.ns / 1000).toFixed(0) + 'µs' : l.ns + 'ns';
+                return `<div style="display: flex; align-items: center; gap: 1rem;">
+                    <div style="width: 200px; font-size: 0.8rem; text-align: right;">${l.name}</div>
+                    <div style="flex: 1; height: 24px; background: var(--bg-tertiary); border-radius: 4px; overflow: hidden;">
+                        <div style="width: ${widthPct}%; height: 100%; background: ${l.color}; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; font-size: 0.75rem; font-weight: 600; color: white;">${timeStr}</div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+        renderLatencyBars();
+    </script>
+</body>
+
+</html>

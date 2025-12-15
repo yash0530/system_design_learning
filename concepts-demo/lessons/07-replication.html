@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Replication & Redundancy | System Design Mastery</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/main.css">
+    <style>
+        .node-grid {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .node {
+            width: 80px;
+            height: 80px;
+            background: var(--bg-tertiary);
+            border: 3px solid var(--border-light);
+            border-radius: var(--radius-lg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .node.leader {
+            border-color: var(--success);
+            background: rgba(16, 185, 129, 0.15);
+        }
+
+        .node.candidate {
+            border-color: var(--warning);
+            background: rgba(245, 158, 11, 0.15);
+            animation: pulse 0.5s infinite;
+        }
+
+        .node.dead {
+            opacity: 0.3;
+            border-style: dashed;
+        }
+
+        .node-label {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .node-role {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        .node.voting {
+            border-color: var(--info);
+            box-shadow: 0 0 10px var(--info);
+        }
+
+        .vote-msg {
+            position: absolute;
+            background: var(--info);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            top: -10px;
+            animation: floatUp 0.8s ease-out forwards;
+        }
+
+        @keyframes floatUp {
+            0% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+        }
+
+        .replication-line {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.5rem 1rem;
+            margin: 0.25rem 0;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+        }
+
+        .timeline {
+            position: relative;
+            padding: 1rem 0;
+        }
+
+        .timeline-bar {
+            height: 4px;
+            background: var(--border-light);
+            border-radius: 2px;
+            margin: 1.5rem 0;
+        }
+
+        .timeline-events {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .timeline-event {
+            text-align: center;
+            font-size: 0.8rem;
+        }
+
+        .event-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            margin: 0 auto 0.5rem;
+        }
+
+        .event-dot.write {
+            background: var(--accent-primary);
+        }
+
+        .event-dot.ack {
+            background: var(--success);
+        }
+
+        .event-dot.lag {
+            background: var(--warning);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="bg-pattern"></div>
+    <div class="bg-grid"></div>
+    <nav class="nav">
+        <div class="container nav-content"><a href="../index.html" class="nav-logo">System Design Mastery</a></div>
+    </nav>
+
+    <div class="lesson-container">
+        <div class="container">
+            <header class="lesson-header">
+                <div class="lesson-meta"><span class="lesson-number">🔄</span><span class="tag">Module 7</span></div>
+                <h1>Replication & Redundancy</h1>
+                <p style="color: var(--text-secondary); max-width: 700px;">Redundancy eliminates single points of
+                    failure. Replication keeps data consistent across copies. Together they enable high availability.
+                </p>
+            </header>
+
+            <div class="lesson-content">
+                <section class="lesson-section">
+                    <h3>Redundancy vs Replication</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="glass-card" style="padding: 1.5rem;">
+                            <h4>Redundancy</h4>
+                            <p>Extra capacity ready for failover. Hot standby servers, multiple network links, backup
+                                power.</p>
+                        </div>
+                        <div class="glass-card" style="padding: 1.5rem;">
+                            <h4>Replication</h4>
+                            <p>Copying data across nodes to keep consistent. Master-slave, multi-master, sync vs async.
+                            </p>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="lesson-section">
+                    <h3>Leader Election Simulator</h3>
+                    <p>Click a node to "kill" it. Watch the cluster elect a new leader.</p>
+                    <div class="demo-container">
+                        <div class="demo-header"><span class="demo-dot red"></span><span
+                                class="demo-dot yellow"></span><span class="demo-dot green"></span><span
+                                class="demo-title">Raft Leader Election</span></div>
+                        <div class="demo-body">
+                            <div class="node-grid" id="nodeGrid"></div>
+                            <div id="electionLog"
+                                style="margin-top: 1rem; padding: 1rem; background: var(--bg-tertiary); border-radius: var(--radius-md); font-size: 0.85rem; color: var(--text-secondary); max-height: 150px; overflow-y: auto;">
+                            </div>
+                            <button class="btn btn-secondary" onclick="resetNodes()" style="margin-top: 1rem;">Reset
+                                Cluster</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="lesson-section">
+                    <h3>Sync vs Async Replication</h3>
+                    <div class="demo-container">
+                        <div class="demo-body">
+                            <div class="tabs">
+                                <button class="tab active" onclick="showRepTab('sync')">Synchronous</button>
+                                <button class="tab" onclick="showRepTab('async')">Asynchronous</button>
+                            </div>
+                            <div class="tab-content active" id="tab-sync">
+                                <div class="timeline">
+                                    <div class="timeline-bar"></div>
+                                    <div class="timeline-events">
+                                        <div class="timeline-event">
+                                            <div class="event-dot write"></div>Write to Leader
+                                        </div>
+                                        <div class="timeline-event">
+                                            <div class="event-dot write"></div>Replicate to Follower
+                                        </div>
+                                        <div class="timeline-event">
+                                            <div class="event-dot ack"></div>Follower ACK
+                                        </div>
+                                        <div class="timeline-event">
+                                            <div class="event-dot ack"></div>Confirm to Client
+                                        </div>
+                                    </div>
+                                </div>
+                                <p><strong>Pros:</strong> Strong consistency, no data loss on leader failure.</p>
+                                <p><strong>Cons:</strong> Higher latency, blocked if replica is slow/down.</p>
+                            </div>
+                            <div class="tab-content" id="tab-async">
+                                <div class="timeline">
+                                    <div class="timeline-bar"></div>
+                                    <div class="timeline-events">
+                                        <div class="timeline-event">
+                                            <div class="event-dot write"></div>Write to Leader
+                                        </div>
+                                        <div class="timeline-event">
+                                            <div class="event-dot ack"></div>Confirm to Client
+                                        </div>
+                                        <div class="timeline-event">
+                                            <div class="event-dot lag"></div>Background Replication
+                                        </div>
+                                        <div class="timeline-event">
+                                            <div class="event-dot lag"></div>Eventual Consistency
+                                        </div>
+                                    </div>
+                                </div>
+                                <p><strong>Pros:</strong> Low latency, unblocked by slow replicas.</p>
+                                <p><strong>Cons:</strong> Risk of data loss, stale reads possible.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="lesson-section">
+                    <h3>Replication Strategies</h3>
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>Strategy</th>
+                                <th>Writes</th>
+                                <th>Reads</th>
+                                <th>Conflict Handling</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Single Leader</strong></td>
+                                <td>Leader only</td>
+                                <td>Any node</td>
+                                <td>None needed</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Multi-Leader</strong></td>
+                                <td>Multiple leaders</td>
+                                <td>Any node</td>
+                                <td>Conflict resolution required</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Leaderless</strong></td>
+                                <td>Any node (quorum)</td>
+                                <td>Any node (quorum)</td>
+                                <td>Read repair, version vectors</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <!-- Quorum -->
+                <section class="lesson-section">
+                    <h3>Quorum Reads/Writes</h3>
+                    <p>In leaderless replication, a quorum ensures overlap between read and write sets.</p>
+                    <div class="formula-box"
+                        style="background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: var(--radius-lg); padding: 1.5rem; text-align: center; margin: 1rem 0;">
+                        <div style="font-family: var(--font-mono); font-size: 1.4rem; color: var(--accent-primary);">W +
+                            R > N</div>
+                        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem;">
+                            W = write replicas, R = read replicas, N = total replicas
+                        </p>
+                    </div>
+                    <div class="concept-grid">
+                        <div class="concept-card glass-card">
+                            <div class="concept-icon">📝</div>
+                            <h4>Strong Consistency</h4>
+                            <p>W=3, R=3, N=5. Write majority, read majority. Guaranteed fresh data.</p>
+                        </div>
+                        <div class="concept-card glass-card">
+                            <div class="concept-icon">⚡</div>
+                            <h4>Fast Reads</h4>
+                            <p>W=5, R=1, N=5. Write to all, read from one. Fast reads, slow writes.</p>
+                        </div>
+                        <div class="concept-card glass-card">
+                            <div class="concept-icon">🚀</div>
+                            <h4>Fast Writes</h4>
+                            <p>W=1, R=5, N=5. Write to one, read from all. Fast writes, slow reads.</p>
+                        </div>
+                    </div>
+                    <div class="info-box info" style="margin-top: 1rem;">
+                        <div class="info-box-title">🏢 Used By</div>
+                        <p>Cassandra uses tunable consistency. DynamoDB allows choosing consistency per request. Riak
+                            uses quorum-based reads/writes.</p>
+                    </div>
+                </section>
+
+                <!-- Quiz -->
+                <section class="lesson-section">
+                    <h3>Check Your Understanding</h3>
+                    <div class="quiz-container">
+                        <p class="quiz-question">
+                            You need a database for a banking system. Transactions must never be lost, even if a server
+                            crashes immediately after a write. Which replication approach?
+                        </p>
+                        <div class="quiz-options" id="repQuizOptions">
+                            <div class="quiz-option" onclick="checkRepAnswer(this, true)">Synchronous replication — wait
+                                for follower ACK</div>
+                            <div class="quiz-option" onclick="checkRepAnswer(this, false)">Asynchronous replication —
+                                faster writes</div>
+                            <div class="quiz-option" onclick="checkRepAnswer(this, false)">Single leader with no
+                                replication</div>
+                            <div class="quiz-option" onclick="checkRepAnswer(this, false)">Eventual consistency with
+                                conflict resolution</div>
+                        </div>
+                        <div id="repQuizFeedback" style="margin-top: 1rem; display: none;"></div>
+                    </div>
+                </section>
+
+                <div class="lesson-nav">
+                    <a href="06-proxies.html" class="nav-btn">← Proxies</a>
+                    <a href="08-sql-nosql.html" class="nav-btn">SQL vs NoSQL →</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let nodes = [];
+        const logEl = document.getElementById('electionLog');
+
+        function initNodes() {
+            const grid = document.getElementById('nodeGrid');
+            grid.innerHTML = '';
+            nodes = [];
+            for (let i = 1; i <= 5; i++) {
+                const node = { id: i, alive: true, role: i === 1 ? 'Leader' : 'Follower' };
+                nodes.push(node);
+                const el = document.createElement('div');
+                el.className = 'node' + (i === 1 ? ' leader' : '');
+                el.innerHTML = `<div class="node-label">N${i}</div><div class="node-role">${node.role}</div>`;
+                el.onclick = () => killNode(i);
+                node.el = el;
+                grid.appendChild(el);
+            }
+            log('Cluster initialized. N1 is leader.');
+        }
+
+        function killNode(id) {
+            const node = nodes.find(n => n.id === id);
+            if (!node || !node.alive) return;
+            node.alive = false;
+            node.el.classList.add('dead');
+            node.el.classList.remove('leader', 'candidate');
+            log(`N${id} failed!`);
+
+            if (node.role === 'Leader') {
+                node.role = 'Dead';
+                node.el.querySelector('.node-role').textContent = 'Dead';
+                setTimeout(startElection, 500);
+            }
+        }
+
+        function startElection() {
+            const alive = nodes.filter(n => n.alive);
+            if (alive.length === 0) { log('All nodes dead. Cluster unavailable.'); return; }
+
+            log('⚠️ Election timeout. Starting election...');
+            const candidates = alive.filter(n => n.role !== 'Leader');
+            if (candidates.length === 0) return;
+
+            // Pick random candidate to make it more realistic if multiple could start
+            const candidate = candidates[Math.floor(Math.random() * candidates.length)];
+
+            candidate.role = 'Candidate';
+            candidate.el.classList.add('candidate');
+            candidate.el.querySelector('.node-role').textContent = 'Candidate';
+            log(`🗳️ N${candidate.id} becomes candidate, requesting votes...`);
+
+            // Visualize voting process
+            setTimeout(() => {
+                alive.forEach(n => {
+                    if (n.id !== candidate.id) {
+                        n.el.classList.add('voting');
+                        const vote = document.createElement('div');
+                        vote.className = 'vote-msg';
+                        vote.textContent = 'Vote +1';
+                        n.el.appendChild(vote);
+                        setTimeout(() => vote.remove(), 1000);
+                        setTimeout(() => n.el.classList.remove('voting'), 500);
+                    }
+                });
+            }, 600);
+
+            setTimeout(() => {
+                const votes = alive.length; // Simplified: all alive nodes vote for the single candidate
+                const majority = Math.floor(nodes.length / 2) + 1;
+                log(`📊 N${candidate.id} received ${votes}/${nodes.length} votes (Need ${majority}).`);
+
+                if (votes >= majority) {
+                    candidate.role = 'Leader';
+                    candidate.el.classList.remove('candidate');
+                    candidate.el.classList.add('leader');
+                    candidate.el.querySelector('.node-role').textContent = 'Leader';
+                    log(`👑 N${candidate.id} elected as new leader!`);
+
+                    // Reset others to Follower
+                    alive.forEach(n => {
+                        if (n.id !== candidate.id) {
+                            n.role = 'Follower';
+                            n.el.classList.remove('leader', 'candidate');
+                            n.el.querySelector('.node-role').textContent = 'Follower';
+                        }
+                    });
+                } else {
+                    log('❌ Election failed. No majority.');
+                }
+            }, 1500);
+        }
+
+        function resetNodes() { logEl.innerHTML = ''; initNodes(); }
+        function log(msg) { logEl.innerHTML += `<div>${msg}</div>`; logEl.scrollTop = logEl.scrollHeight; }
+        function showRepTab(id) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('tab-' + id).classList.add('active');
+        }
+        initNodes();
+
+        // Quiz
+        function checkRepAnswer(el, correct) {
+            const options = document.querySelectorAll('#repQuizOptions .quiz-option');
+            options.forEach(opt => { opt.style.pointerEvents = 'none'; opt.classList.remove('correct', 'incorrect'); });
+            el.classList.add(correct ? 'correct' : 'incorrect');
+            if (!correct) options[0].classList.add('correct');
+            const feedback = document.getElementById('repQuizFeedback');
+            feedback.style.display = 'block';
+            feedback.innerHTML = correct
+                ? '<div class="info-box tip"><div class="info-box-title">✅ Correct!</div><p>For banking, data durability is critical. Synchronous replication ensures the write is on at least two nodes before confirming to the client — no data loss if leader crashes.</p></div>'
+                : '<div class="info-box warning"><div class="info-box-title">❌ Not quite</div><p>Async replication can lose data if the leader crashes before syncing. For banking, you must wait for follower acknowledgment before confirming the transaction.</p></div>';
+        }
+    </script>
+</body>
+
+</html>

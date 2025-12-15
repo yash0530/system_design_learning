@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proxies & Gateways | System Design Mastery</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/main.css">
+    <style>
+        .proxy-flow {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 2rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .flow-box {
+            padding: 1rem 1.5rem;
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border-light);
+            border-radius: var(--radius-lg);
+            text-align: center;
+            min-width: 100px;
+        }
+
+        .flow-box.client {
+            border-color: var(--info);
+        }
+
+        .flow-box.proxy {
+            border-color: var(--accent-primary);
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .flow-box.server {
+            border-color: var(--success);
+        }
+
+        .flow-arrow {
+            font-size: 1.5rem;
+            color: var(--accent-primary);
+        }
+
+        .proxy-type {
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .proxy-type:hover {
+            transform: scale(1.05);
+        }
+
+        .proxy-type.active {
+            background: rgba(99, 102, 241, 0.2);
+            border-color: var(--accent-primary);
+        }
+
+        .proxy-type.active {
+            background: rgba(99, 102, 241, 0.2);
+            border-color: var(--accent-primary);
+        }
+
+        .packet {
+            width: 12px;
+            height: 12px;
+            background: var(--accent-primary);
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 0;
+            transform: translateY(-50%);
+            opacity: 0;
+            box-shadow: 0 0 8px var(--accent-primary);
+        }
+
+        .packet.animate {
+            animation: flowPacket 2s infinite linear;
+        }
+
+        @keyframes flowPacket {
+            0% {
+                left: 10%;
+                opacity: 0;
+            }
+
+            10% {
+                opacity: 1;
+            }
+
+            90% {
+                opacity: 1;
+            }
+
+            100% {
+                left: 90%;
+                opacity: 0;
+            }
+        }
+
+        .proxy-flow {
+            position: relative;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="bg-pattern"></div>
+    <div class="bg-grid"></div>
+    <nav class="nav">
+        <div class="container nav-content"><a href="../index.html" class="nav-logo">System Design Mastery</a></div>
+    </nav>
+
+    <div class="lesson-container">
+        <div class="container">
+            <header class="lesson-header">
+                <div class="lesson-meta"><span class="lesson-number">🛡️</span><span class="tag">Module 6</span></div>
+                <h1>Proxies & Gateways</h1>
+                <p style="color: var(--text-secondary); max-width: 700px;">Proxies are intermediaries that can observe,
+                    modify, route, or block traffic — critical infrastructure in modern systems.</p>
+            </header>
+
+            <div class="lesson-content">
+                <section class="lesson-section">
+                    <h3>Forward vs Reverse Proxy</h3>
+                    <p>Click each type to see the traffic flow.</p>
+                    <div class="demo-container">
+                        <div class="demo-body">
+                            <div class="controls">
+                                <button class="btn btn-primary" onclick="showForward()">Forward Proxy</button>
+                                <button class="btn btn-secondary" onclick="showReverse()">Reverse Proxy</button>
+                            </div>
+                            <div class="proxy-flow" id="proxyFlow">
+                                <div class="flow-box client" id="boxLeft">👤 Client</div>
+                                <div class="flow-arrow">→</div>
+                                <div class="flow-box proxy" id="boxCenter">🔀 Proxy</div>
+                                <div class="flow-arrow">→</div>
+                                <div class="flow-box server" id="boxRight">🖥️ Server</div>
+                                <div class="packet" id="flowPacket"></div>
+                            </div>
+                            <div id="proxyDesc"
+                                style="text-align: center; color: var(--text-secondary); padding: 1rem;"></div>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1.5rem;">
+                        <div class="glass-card" style="padding: 1.5rem;">
+                            <h4 style="color: var(--info);">Forward Proxy</h4>
+                            <p>Client → Forward Proxy → Internet</p>
+                            <ul style="margin-top: 0.5rem; padding-left: 1.5rem; font-size: 0.9rem;">
+                                <li>Hides client identity from servers</li>
+                                <li>Used for: VPNs, content filtering, corporate firewalls</li>
+                                <li>Example: Squid, corporate proxies</li>
+                            </ul>
+                        </div>
+                        <div class="glass-card" style="padding: 1.5rem;">
+                            <h4 style="color: var(--success);">Reverse Proxy</h4>
+                            <p>Internet → Reverse Proxy → Your Servers</p>
+                            <ul style="margin-top: 0.5rem; padding-left: 1.5rem; font-size: 0.9rem;">
+                                <li>Hides server identity from clients</li>
+                                <li>Used for: Load balancing, SSL termination, caching</li>
+                                <li>Example: Nginx, HAProxy, Cloudflare</li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="lesson-section">
+                    <h3>Reverse Proxy vs Load Balancer vs API Gateway</h3>
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>Component</th>
+                                <th>Primary Function</th>
+                                <th>Features</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Reverse Proxy</strong></td>
+                                <td>Forward requests to backends</td>
+                                <td>SSL termination, caching, compression</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Load Balancer</strong></td>
+                                <td>Distribute traffic across servers</td>
+                                <td>Health checks, session affinity, failover</td>
+                            </tr>
+                            <tr>
+                                <td><strong>API Gateway</strong></td>
+                                <td>Manage API traffic</td>
+                                <td>Auth, rate limiting, versioning, transformation</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="info-box info">
+                        <div class="info-box-title">In Practice</div>
+                        <p>Modern tools like Nginx, Envoy, and Kong often serve as all three. The boundaries are blurry
+                            — an API gateway IS a reverse proxy with extra features.</p>
+                    </div>
+                </section>
+
+                <section class="lesson-section">
+                    <h3>Key Capabilities</h3>
+                    <div class="concept-grid">
+                        <div class="concept-card glass-card">
+                            <div class="concept-icon">🔐</div>
+                            <h4>TLS Termination</h4>
+                            <p>Handle HTTPS at the proxy so backends use plain HTTP internally.</p>
+                        </div>
+                        <div class="concept-card glass-card">
+                            <div class="concept-icon">🚦</div>
+                            <h4>Rate Limiting</h4>
+                            <p>Protect backends by limiting requests per client/IP.</p>
+                        </div>
+                        <div class="concept-card glass-card">
+                            <div class="concept-icon">📊</div>
+                            <h4>Centralized Logging</h4>
+                            <p>One place for all request metrics and traces.</p>
+                        </div>
+                        <div class="concept-card glass-card">
+                            <div class="concept-icon">🔄</div>
+                            <h4>Canary Releases</h4>
+                            <p>Route a percentage of traffic to new versions.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Rate Limiting Demo -->
+                <section class="lesson-section">
+                    <h3>Rate Limiting Visualization (Token Bucket)</h3>
+                    <p>The <strong>Token Bucket</strong> algorithm is a standard way to implement rate limiting. Tokens
+                        are added to the bucket at a fixed rate. Each request comsumes a token. If the bucket is empty,
+                        the request is rejected (HTTP 429).</p>
+
+                    <div class="demo-container">
+                        <div class="demo-header">
+                            <span class="demo-dot red"></span>
+                            <span class="demo-dot yellow"></span>
+                            <span class="demo-dot green"></span>
+                            <span class="demo-title">Token Bucket Simulator</span>
+                        </div>
+                        <div class="demo-body"
+                            style="display: flex; gap: 2rem; align-items: flex-start; flex-wrap: wrap;">
+                            <!-- Bucket Visual -->
+                            <div style="flex: 0 0 150px; display: flex; flex-direction: column; align-items: center;">
+                                <div class="bucket-container" id="bucket">
+                                    <!-- Tokens will go here -->
+                                </div>
+                                <div style="margin-top: 0.5rem; font-weight: 600; color: var(--accent-primary);">
+                                    Tokens: <span id="tokenCount">5</span>/5
+                                </div>
+                            </div>
+
+                            <!-- Controls & Info -->
+                            <div style="flex: 1; min-width: 250px;">
+                                <div class="controls" style="margin-bottom: 1rem;">
+                                    <button class="btn btn-primary" onclick="sendRateRequest()">Send Request</button>
+                                    <button class="btn btn-secondary" onclick="floodRequests()">Flood (10 req)</button>
+                                </div>
+                                <div class="info-box tip" style="margin-bottom: 1rem;">
+                                    <div class="info-box-title">⚙️ Rules</div>
+                                    <p>• Max Capacity: 5 tokens<br>• Refill Rate: 1 token every 1s<br>• Cost: 1 token
+                                        per request</p>
+                                </div>
+                                <div id="rateLog"
+                                    style="height: 150px; overflow-y: auto; background: var(--bg-tertiary); padding: 0.5rem; border-radius: var(--radius-md); font-family: var(--font-mono); font-size: 0.8rem; border: 1px solid var(--border-light);">
+                                    <div style="color: var(--text-muted); font-style: italic;">Waiting for requests...
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <style>
+                        .bucket-container {
+                            width: 100px;
+                            height: 120px;
+                            border: 3px solid var(--text-secondary);
+                            border-top: none;
+                            border-radius: 0 0 10px 10px;
+                            position: relative;
+                            background: rgba(255, 255, 255, 0.05);
+                            display: flex;
+                            flex-direction: column-reverse;
+                            /* Stack from bottom */
+                            padding: 5px;
+                            gap: 2px;
+                            overflow: hidden;
+                        }
+
+                        .token {
+                            width: 100%;
+                            height: 18px;
+                            background: var(--accent-primary);
+                            border-radius: 4px;
+                            animation: dropIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+                        }
+
+                        @keyframes dropIn {
+                            from {
+                                transform: translateY(-100px);
+                                opacity: 0;
+                            }
+
+                            to {
+                                transform: translateY(0);
+                                opacity: 1;
+                            }
+                        }
+
+                        .log-entry {
+                            margin-bottom: 4px;
+                            border-bottom: 1px solid var(--border-light);
+                            padding-bottom: 2px;
+                        }
+
+                        .log-success {
+                            color: var(--success);
+                        }
+
+                        .log-error {
+                            color: var(--error);
+                            font-weight: bold;
+                        }
+
+                        .log-refill {
+                            color: var(--info);
+                            font-size: 0.75rem;
+                        }
+                    </style>
+
+                    <script>
+                        class TokenBucket {
+                            constructor(capacity, refillRate) {
+                                this.capacity = capacity;
+                                this.tokens = capacity;
+                                this.refillRate = refillRate; // ms per token
+                                this.lastRefill = Date.now();
+
+                                // Start refill loop
+                                setInterval(() => this.refill(), this.refillRate);
+                            }
+
+                            refill() {
+                                if (this.tokens < this.capacity) {
+                                    this.tokens++;
+                                    this.updateUI();
+                                    this.log('💧 Refilled 1 token', 'log-refill');
+                                }
+                            }
+
+                            consume() {
+                                if (this.tokens > 0) {
+                                    this.tokens--;
+                                    this.updateUI();
+                                    return true;
+                                }
+                                return false;
+                            }
+
+                            updateUI() {
+                                const bucketEl = document.getElementById('bucket');
+                                const countEl = document.getElementById('tokenCount');
+                                if (!bucketEl || !countEl) return;
+
+                                countEl.textContent = this.tokens;
+
+                                // Rebuild tokens visual
+                                bucketEl.innerHTML = '';
+                                for (let i = 0; i < this.tokens; i++) {
+                                    const t = document.createElement('div');
+                                    t.className = 'token';
+                                    bucketEl.appendChild(t);
+                                }
+                            }
+
+                            log(msg, className) {
+                                const logEl = document.getElementById('rateLog');
+                                if (!logEl) return;
+                                const div = document.createElement('div');
+                                div.className = 'log-entry ' + (className || '');
+                                div.innerHTML = `<span style="opacity:0.5">[${new Date().toLocaleTimeString().split(' ')[0]}]</span> ${msg}`;
+                                logEl.prepend(div);
+                                if (logEl.children.length > 20) logEl.lastElementChild.remove();
+                            }
+                        }
+
+                        // Initialize global bucket
+                        const bucket = new TokenBucket(5, 1000); // 5 tokens, 1 per second
+
+                        // Hook into global scope for buttons
+                        window.sendRateRequest = function () {
+                            if (bucket.consume()) {
+                                bucket.log('✅ 200 OK - Request allowed', 'log-success');
+                            } else {
+                                bucket.log('⛔ 429 Too Many Requests - Rejected', 'log-error');
+
+                                // Visual feedback for rejection
+                                const bucketEl = document.getElementById('bucket');
+                                bucketEl.style.borderColor = 'var(--error)';
+                                setTimeout(() => bucketEl.style.borderColor = 'var(--text-secondary)', 200);
+                            }
+                        };
+
+                        window.floodRequests = function () {
+                            let i = 0;
+                            const interval = setInterval(() => {
+                                window.sendRateRequest();
+                                i++;
+                                if (i >= 10) clearInterval(interval);
+                            }, 100);
+                        };
+
+                        // Initial UI sync
+                        setTimeout(() => bucket.updateUI(), 100);
+                    </script>
+
+                    <!-- Circuit Breaker -->
+                    <section class="lesson-section">
+                        <h3>Circuit Breaker Pattern</h3>
+                        <p>Proxies can implement circuit breakers to prevent cascading failures.</p>
+                        <div class="demo-container">
+                            <div class="demo-body">
+                                <div
+                                    style="display: flex; align-items: center; gap: 2rem; justify-content: center; flex-wrap: wrap;">
+                                    <div
+                                        style="text-align: center; padding: 1rem; background: var(--bg-tertiary); border-radius: var(--radius-lg);">
+                                        <div style="font-size: 2rem;">🟢</div>
+                                        <div style="font-weight: 600;">CLOSED</div>
+                                        <div style="font-size: 0.8rem; color: var(--text-muted);">Requests pass through
+                                        </div>
+                                    </div>
+                                    <div style="font-size: 1.5rem; color: var(--warning);">→ failures →</div>
+                                    <div
+                                        style="text-align: center; padding: 1rem; background: var(--error); border-radius: var(--radius-lg); color: white;">
+                                        <div style="font-size: 2rem;">🔴</div>
+                                        <div style="font-weight: 600;">OPEN</div>
+                                        <div style="font-size: 0.8rem;">Requests fail fast</div>
+                                    </div>
+                                    <div style="font-size: 1.5rem; color: var(--warning);">→ timeout →</div>
+                                    <div
+                                        style="text-align: center; padding: 1rem; background: var(--warning); border-radius: var(--radius-lg); color: black;">
+                                        <div style="font-size: 2rem;">🟡</div>
+                                        <div style="font-weight: 600;">HALF-OPEN</div>
+                                        <div style="font-size: 0.8rem;">Test requests</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="info-box info" style="margin-top: 1rem;">
+                            <div class="info-box-title">🏢 Used By</div>
+                            <p>Netflix Hystrix (now deprecated), Resilience4j, Envoy, Istio service mesh. Prevents one
+                                slow
+                                service from bringing down the entire system.</p>
+                        </div>
+                    </section>
+
+                    <!-- Quiz -->
+                    <section class="lesson-section">
+                        <h3>Check Your Understanding</h3>
+                        <div class="quiz-container">
+                            <p class="quiz-question">
+                                You want to add rate limiting, authentication, and request logging to all your
+                                microservices. What's the best approach?
+                            </p>
+                            <div class="quiz-options" id="proxyQuizOptions">
+                                <div class="quiz-option" onclick="checkProxyAnswer(this, false)">Add these features to
+                                    each
+                                    microservice</div>
+                                <div class="quiz-option" onclick="checkProxyAnswer(this, true)">Use an API Gateway as a
+                                    reverse proxy</div>
+                                <div class="quiz-option" onclick="checkProxyAnswer(this, false)">Use a forward proxy for
+                                    each client</div>
+                                <div class="quiz-option" onclick="checkProxyAnswer(this, false)">Configure it in the
+                                    load
+                                    balancer only</div>
+                            </div>
+                            <div id="proxyQuizFeedback" style="margin-top: 1rem; display: none;"></div>
+                        </div>
+                    </section>
+
+                    <div class="lesson-nav">
+                        <a href="05-indexes.html" class="nav-btn">← Indexes</a>
+                        <a href="07-replication.html" class="nav-btn">Replication →</a>
+                    </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showForward() {
+            document.getElementById('boxCenter').innerHTML = '🔀 Forward<br>Proxy';
+            document.getElementById('boxRight').innerHTML = '🌐 Internet';
+            document.getElementById('boxLeft').innerHTML = '👤 Client';
+            document.getElementById('proxyDesc').innerHTML = '<strong>Forward Proxy</strong>: Client sends request to Proxy. Proxy forwards to Internet. Server sees Proxy IP.';
+
+            // Visual cues
+            document.getElementById('boxCenter').style.borderColor = 'var(--accent-primary)';
+            document.getElementById('flowPacket').classList.remove('animate');
+            void document.getElementById('flowPacket').offsetWidth; // trigger reflow
+            document.getElementById('flowPacket').classList.add('animate');
+        }
+
+        function showReverse() {
+            document.getElementById('boxCenter').innerHTML = '🔀 Reverse<br>Proxy';
+            document.getElementById('boxRight').innerHTML = '🖥️ Server';
+            document.getElementById('boxLeft').innerHTML = '🌐 Client';
+            document.getElementById('proxyDesc').innerHTML = '<strong>Reverse Proxy</strong>: Client requests public endpoint. Proxy routes to internal servers. Client sees Proxy IP.';
+
+            // Visual cues
+            document.getElementById('boxCenter').style.borderColor = 'var(--success)';
+            document.getElementById('flowPacket').classList.remove('animate');
+            void document.getElementById('flowPacket').offsetWidth; // trigger reflow
+            document.getElementById('flowPacket').classList.add('animate');
+        }
+
+        // Start with forward proxy view
+        showForward();
+
+        // Quiz
+        function checkProxyAnswer(el, correct) {
+            const options = document.querySelectorAll('#proxyQuizOptions .quiz-option');
+            options.forEach(opt => { opt.style.pointerEvents = 'none'; opt.classList.remove('correct', 'incorrect'); });
+            el.classList.add(correct ? 'correct' : 'incorrect');
+            if (!correct) options[1].classList.add('correct');
+            const feedback = document.getElementById('proxyQuizFeedback');
+            feedback.style.display = 'block';
+            feedback.innerHTML = correct
+                ? '<div class="info-box tip"><div class="info-box-title">✅ Correct!</div><p>API Gateway centralizes cross-cutting concerns. All requests pass through one point where you can apply policies consistently.</p></div>'
+                : '<div class="info-box warning"><div class="info-box-title">❌ Not quite</div><p>Adding features to each service creates duplication and inconsistency. An API Gateway (reverse proxy with extra features) handles this centrally.</p></div>';
+        }
+    </script>
+</body>
+
+</html>

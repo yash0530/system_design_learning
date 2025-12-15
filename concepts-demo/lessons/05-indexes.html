@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Indexes | System Design Mastery</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/main.css">
+    <style>
+        .index-viz {
+            display: flex;
+            gap: 2rem;
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+
+        .table-viz {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .table-row {
+            display: flex;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-sm);
+            margin-bottom: 0.25rem;
+            font-size: 0.85rem;
+        }
+
+        .table-row.header {
+            background: var(--accent-primary);
+            color: white;
+            font-weight: 600;
+        }
+
+        .table-row.highlight {
+            background: rgba(16, 185, 129, 0.3);
+            border: 1px solid var(--success);
+        }
+
+        .table-cell {
+            flex: 1;
+        }
+
+        .btree {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .btree-level {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btree-node {
+            padding: 0.5rem 1rem;
+            background: var(--bg-secondary);
+            border: 2px solid var(--accent-primary);
+            border-radius: var(--radius-md);
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .btree-node.highlight {
+            background: rgba(99, 102, 241, 0.3);
+        }
+
+        .query-demo {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+        }
+
+
+
+        .btree-connections {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .btree-connection-path {
+            fill: none;
+            stroke: var(--border-light);
+            stroke-width: 2;
+            transition: stroke 0.3s;
+        }
+
+        .btree-connection-path.active {
+            stroke: var(--accent-primary);
+            stroke-width: 3;
+        }
+
+        .btree {
+            position: relative;
+            z-index: 1;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="bg-pattern"></div>
+    <div class="bg-grid"></div>
+    <nav class="nav">
+        <div class="container nav-content"><a href="../index.html" class="nav-logo">System Design Mastery</a></div>
+    </nav>
+    <div class="lesson-container">
+        <div class="container">
+            <header class="lesson-header">
+                <div class="lesson-meta"><span class="lesson-number">📑</span><span class="tag">Module 5</span></div>
+                <h1>Database Indexes</h1>
+                <p style="color: var(--text-secondary); max-width: 700px;">Indexes speed up reads dramatically but slow
+                    down writes. Understanding when and how to use them is crucial.</p>
+            </header>
+            <div class="lesson-content">
+                <section class="lesson-section">
+                    <h3>What Is an Index?</h3>
+                    <p>An index is a separate data structure that stores a subset of columns alongside pointers to the
+                        full rows. Like a book's index — instead of reading every page, you look up the term and jump to
+                        the right page.</p>
+                    <div class="demo-container" style="margin-top: 1.5rem;">
+                        <div class="demo-header"><span class="demo-dot red"></span><span
+                                class="demo-dot yellow"></span><span class="demo-dot green"></span><span
+                                class="demo-title">Index Query Comparison</span></div>
+                        <div class="demo-body">
+                            <div class="controls"><button class="btn btn-primary" onclick="queryWithoutIndex()">Query
+                                    WITHOUT Index</button><button class="btn btn-primary"
+                                    onclick="queryWithIndex()">Query WITH Index</button><button
+                                    class="btn btn-secondary" onclick="resetQuery()">Reset</button></div>
+                            <p style="margin: 1rem 0; font-family: var(--font-mono); font-size: 0.9rem;">SELECT * FROM
+                                users WHERE email='charlie@example.com' </p>
+                            <div class="index-viz">
+                                <div class="table-viz">
+                                    <div style="font-weight: 600; margin-bottom: 0.5rem;">Users Table</div>
+                                    <div class="table-row header"><span class="table-cell">ID</span><span
+                                            class="table-cell">Name</span><span class="table-cell">Email</span></div>
+                                    <div class="table-row" id="row1"><span class="table-cell">1</span><span
+                                            class="table-cell">Alice</span><span class="table-cell">alice@ex.com</span>
+                                    </div>
+                                    <div class="table-row" id="row2"><span class="table-cell">2</span><span
+                                            class="table-cell">Bob</span><span class="table-cell">bob@ex.com</span>
+                                    </div>
+                                    <div class="table-row" id="row3"><span class="table-cell">3</span><span
+                                            class="table-cell">Charlie</span><span
+                                            class="table-cell">charlie@example.com</span></div>
+                                    <div class="table-row" id="row4"><span class="table-cell">4</span><span
+                                            class="table-cell">Diana</span><span class="table-cell">diana@ex.com</span>
+                                    </div>
+                                    <div class="table-row" id="row5"><span class="table-cell">5</span><span
+                                            class="table-cell">Eve</span><span class="table-cell">eve@ex.com</span>
+                                    </div>
+                                </div>
+                                <div id="indexViz" style="display: none; position: relative; min-width: 300px;"><svg
+                                        class="btree-connections">
+                                        < !-- Root to Left -->
+                                            <path id="path_root_left" d="M150 40 L80 90"
+                                                class="btree-connection-path" />
+                                            < !-- Root to Middle -->
+                                                <path id="path_root_mid" d="M150 40 L150 90"
+                                                    class="btree-connection-path" />
+                                                < !-- Root to Right -->
+                                                    <path id="path_root_right" d="M150 40 L220 90"
+                                                        class="btree-connection-path" />
+                                    </svg>
+                                    <div style="font-weight: 600; margin-bottom: 0.5rem; text-align: center;">B-Tree
+                                        Index on Email</div>
+                                    <div class="btree">
+                                        <div class="btree-level" style="justify-content: center; margin-bottom: 2rem;">
+                                            <div class="btree-node" id="bnode1">bob | diana</div>
+                                        </div>
+                                        <div class="btree-level" style="justify-content: space-between;">
+                                            <div class="btree-node" id="bnode2">alice</div>
+                                            <div class="btree-node" id="bnode3">bob, charlie</div>
+                                            <div class="btree-node" id="bnode4">diana, eve</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="query-demo">
+                                <div id="queryResult">Click a button to see the query execution.</div>
+                                <div id="queryStats"
+                                    style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--text-muted);"></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <section class="lesson-section">
+                    <h3>Index Types</h3>
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Structure</th>
+                                <th>Best For</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>B-Tree</strong></td>
+                                <td>Balanced tree, sorted</td>
+                                <td>Range queries, equality, most use cases</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Hash</strong></td>
+                                <td>Hash table</td>
+                                <td>Exact equality only, O(1) lookup</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Bitmap</strong></td>
+                                <td>Bit arrays</td>
+                                <td>Low-cardinality columns (gender, status)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Full-text</strong></td>
+                                <td>Inverted index</td>
+                                <td>Text search, word matching</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Spatial</strong></td>
+                                <td>R-tree</td>
+                                <td>Geographic data, coordinates</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </section>
+                <section class="lesson-section">
+                    <h3>Index Trade-offs</h3>
+                    <div class="concept-grid">
+                        <div class="concept-card glass-card">
+                            <div class="concept-icon">⚡</div>
+                            <h4>Faster Reads</h4>
+                            <p>O(log n) lookups instead of O(n) full table scans.</p>
+                        </div>
+                        <div class="concept-card glass-card">
+                            <div class="concept-icon">🐢</div>
+                            <h4>Slower Writes</h4>
+                            <p>Every INSERT/UPDATE must also update the index.</p>
+                        </div>
+                        <div class="concept-card glass-card">
+                            <div class="concept-icon">💾</div>
+                            <h4>Storage Cost</h4>
+                            <p>Indexes consume disk space, sometimes 10-20% of table size.</p>
+                        </div>
+                    </div>
+                    <div class="concept-grid" style="margin-top: 1rem;">
+                        <div class="concept-card glass-card" style="grid-column: span 3;">
+                            <div style="display: flex; gap: 1rem; align-items: center;">
+                                <div class="concept-icon">⏱️</div>
+                                <div>
+                                    <h4>Read vs Write Latency Impact</h4>
+                                    <div style="display: flex; gap: 2rem; margin-top: 0.5rem;">
+                                        <div>
+                                            <div style="font-size: 0.85rem; color: var(--text-secondary);">Read Query
+                                                (SELECT)</div>
+                                            <div style="font-weight: 600; color: var(--success);">10ms <span
+                                                    style="font-size: 0.8rem; color: var(--text-muted);">(scan)</span>➝
+                                                0.5ms <span
+                                                    style="font-size: 0.8rem; color: var(--text-muted);">(index)</span>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div style="font-size: 0.85rem; color: var(--text-secondary);">Write Query
+                                                (INSERT)</div>
+                                            <div style="font-weight: 600; color: var(--error);">5ms ➝ 8ms</div>
+                                            <div style="font-size: 0.75rem; color: var(--text-muted);">Must update
+                                                Index+Table</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="info-box warning" style="margin-top: 1rem;">
+                        <div class="info-box-title">When NOT to Index</div>
+                        <p>Small tables, columns with many writes, columns rarely queried, very low or very high
+                            cardinality columns.</p>
+                    </div>
+                </section>
+                <section class="lesson-section">
+                    <h3>Primary vs Secondary Index</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="glass-card" style="padding: 1.5rem;">
+                            <h4 style="color: var(--accent-primary);">Primary (Clustered)</h4>
+                            <p>Data rows are physically stored in index order. Only one per table. Usually on primary
+                                key.</p>
+                        </div>
+                        <div class="glass-card" style="padding: 1.5rem;">
+                            <h4 style="color: var(--accent-secondary);">Secondary (Non-clustered)</h4>
+                            <p>Separate structure pointing to data rows. Multiple allowed. Created on frequently queried
+                                columns.</p>
+                        </div>
+                </section>
+                < !-- Composite Indexes -->
+                    <section class="lesson-section">
+                        <h3>Composite & Covering Indexes</h3>
+                        <div class="concept-grid">
+                            <div class="concept-card glass-card">
+                                <div class="concept-icon">🔗</div>
+                                <h4>Composite Index</h4>
+                                <p>Index on multiple columns. Order matters ! (last_name, first_name) works for
+                                    searching by last_name alone, but not first_name alone.</p>
+                            </div>
+                            <div class="concept-card glass-card">
+                                <div class="concept-icon">📦</div>
+                                <h4>Covering Index</h4>
+                                <p>Index contains all columns needed for a query. No table lookup needed — the index
+                                    "covers" the query completely.</p>
+                            </div>
+                        </div>
+                        <div class="code-block" style="margin-top: 1rem;"><span class="comment">-- Composite index for
+                                multi-column queries</span><span class="keyword">CREATE INDEX</span>idx_user_search
+                            <span class="keyword">ON</span>users(status, created_at, email);
+
+                            <span class="comment">-- This query uses the index efficiently:</span><span
+                                class="keyword">SELECT</span>email <span class="keyword">FROM</span>users <span
+                                class="keyword">WHERE</span>status='active'
+                            <span class="keyword">AND</span>created_at>'2024-01-01';
+                        </div>
+                        <div class="info-box info" style="margin-top: 1rem;">
+                            <div class="info-box-title">🏢 Used By</div>
+                            <p>PostgreSQL uses B-tree by default. MySQL InnoDB stores data in PK order. ElasticSearch
+                                uses inverted indexes for full-text search.</p>
+                        </div>
+                    </section>
+                    < !-- Quiz -->
+                        <section class="lesson-section">
+                            <h3>Check Your Understanding</h3>
+                            <div class="quiz-container">
+                                <p class="quiz-question">You have a table with 10 million rows. Queries filter by status
+                                    (3 values),
+                                    then sort by created_at. What's the best index?
+                                </p>
+                                <div class="quiz-options" id="indexQuizOptions">
+                                    <div class="quiz-option" onclick="checkIndexAnswer(this, false)">INDEX(created_at) —
+                                        sorting is the slow part</div>
+                                    <div class="quiz-option" onclick="checkIndexAnswer(this, true)">INDEX(status,
+                                        created_at) — filter first,
+                                        then sort</div>
+                                    <div class="quiz-option" onclick="checkIndexAnswer(this, false)">INDEX(status) —
+                                        filtering matters most</div>
+                                    <div class="quiz-option" onclick="checkIndexAnswer(this, false)">No index — 10M rows
+                                        isn't
+                                        that big</div>
+                                </div>
+                                <div id="indexQuizFeedback" style="margin-top: 1rem; display: none;"></div>
+                            </div>
+                        </section>
+                        <div class="lesson-nav"><a href="04-data-partitioning.html" class="nav-btn">← Data
+                                Partitioning</a><a href="06-proxies.html" class="nav-btn">Proxies →</a></div>
+            </div>
+        </div>
+    </div>
+    <script>let step = 0;
+
+        function resetQuery() {
+            document.querySelectorAll('.table-row').forEach(r => r.classList.remove('highlight'));
+            document.querySelectorAll('.btree-node').forEach(n => n.classList.remove('highlight'));
+            document.getElementById('indexViz').style.display = 'none';
+            document.getElementById('queryResult').textContent = 'Click a button to see the query execution.';
+            document.getElementById('queryStats').textContent = '';
+            step = 0;
+        }
+
+        function queryWithoutIndex() {
+            resetQuery();
+            const rows = ['row1',
+                'row2',
+                'row3',
+                'row4',
+                'row5'];
+            let i = 0;
+
+            const interval = setInterval(() => {
+                if (i > 0) document.getElementById(rows[i - 1]).classList.remove('highlight');
+
+                if (i < rows.length) {
+                    document.getElementById(rows[i]).classList.add('highlight');
+
+                    document.getElementById('queryResult').textContent = `Scanning row $ {
+                            i + 1
+                        }
+
+                        ...`;
+
+                    if (i === 2) {
+                        document.getElementById('queryResult').textContent = '✅ Found at row 3!';
+                        document.getElementById('queryStats').textContent = 'Rows scanned: 3 (Full table scan in worst case: 5)';
+                    }
+
+                    i++;
+                }
+
+                else {
+                    clearInterval(interval);
+                }
+            }
+
+                , 400);
+        }
+
+        function queryWithIndex() {
+            resetQuery();
+            document.getElementById('indexViz').style.display = 'block';
+
+            // 1. Highlight Root
+            setTimeout(() => {
+                document.getElementById('bnode1').classList.add('highlight');
+                document.getElementById('queryResult').textContent = 'B-Tree root: "charlie" > "bob", go right...';
+            }
+
+                , 300);
+
+            // 2. Animate Path
+            setTimeout(() => {
+                document.getElementById('path_root_mid').classList.add('active'); // Center path for simplicity of demo structure
+            }
+
+                , 800);
+
+            // 3. Highlight Leaf
+            setTimeout(() => {
+                document.getElementById('bnode1').classList.remove('highlight');
+                document.getElementById('path_root_mid').classList.remove('active');
+                document.getElementById('bnode3').classList.add('highlight'); // In this demo structure, it's the middle child actually
+                document.getElementById('queryResult').textContent = 'Found "charlie" in leaf node!';
+            }
+
+                , 1300);
+
+            // 4. Highlight Table Row
+            setTimeout(() => {
+                document.getElementById('row3').classList.add('highlight');
+                document.getElementById('queryResult').textContent = '✅ Pointer lookup → Row 3';
+                document.getElementById('queryStats').textContent = 'Index nodes traversed: 2. Rows scanned: 1. O(log n)!';
+            }
+
+                , 1800);
+        }
+
+        // Quiz
+        function checkIndexAnswer(el, correct) {
+            const options = document.querySelectorAll('#indexQuizOptions .quiz-option');
+
+            options.forEach(opt => {
+                opt.style.pointerEvents = 'none'; opt.classList.remove('correct', 'incorrect');
+            });
+            el.classList.add(correct ? 'correct' : 'incorrect');
+            if (!correct) options[1].classList.add('correct');
+            const feedback = document.getElementById('indexQuizFeedback');
+            feedback.style.display = 'block';
+            feedback.innerHTML = correct ? '<div class="info-box tip"><div class="info-box-title">✅ Correct!</div><p>Composite index (status, created_at) lets you filter by status, then retrieve pre-sorted rows for that status. The leftmost prefix rule applies!</p></div>'
+                : '<div class="info-box warning"><div class="info-box-title">❌ Not quite</div><p>INDEX(status, created_at) is optimal. Filter narrows down rows, then data is already sorted within each status group. Without the composite, you\'d need to sort millions of rows.</p></div>';
+        }
+
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL vs NoSQL | System Design Mastery</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/main.css">
+    <style>
+        .db-type {
+            padding: 1.5rem;
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-light);
+            border-radius: var(--radius-xl);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .db-type:hover {
+            border-color: var(--accent-primary);
+        }
+
+        .db-type.selected {
+            border-color: var(--success);
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .db-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .scenario {
+            padding: 1rem;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-md);
+            margin: 0.5rem 0;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .scenario:hover {
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .scenario.correct {
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid var(--success);
+        }
+
+        .scenario.incorrect {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid var(--error);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="bg-pattern"></div>
+    <div class="bg-grid"></div>
+    <nav class="nav">
+        <div class="container nav-content"><a href="../index.html" class="nav-logo">System Design Mastery</a></div>
+    </nav>
+
+    <div class="lesson-container">
+        <div class="container">
+            <header class="lesson-header">
+                <div class="lesson-meta"><span class="lesson-number">🗄️</span><span class="tag">Module 8</span></div>
+                <h1>SQL vs NoSQL</h1>
+                <p style="color: var(--text-secondary); max-width: 700px;">There's no universally better choice — the
+                    right database depends on your data structure, consistency requirements, and scale needs.</p>
+            </header>
+
+            <div class="lesson-content">
+                <section class="lesson-section">
+                    <h3>NoSQL Database Types</h3>
+                    <div class="concept-grid">
+                        <div class="concept-card glass-card">
+                            <div class="concept-icon">🔑</div>
+                            <h4>Key-Value</h4>
+                            <p>Simple get/put by key. Redis, DynamoDB. Great for caching, sessions.</p>
+                        </div>
+                        <div class="concept-card glass-card">
+                            <div class="concept-icon">📄</div>
+                            <h4>Document</h4>
+                            <p>JSON-like documents, flexible schema. MongoDB, CouchDB. Good for catalogs, CMS.</p>
+                        </div>
+                        <div class="concept-card glass-card">
+                            <div class="concept-icon">📊</div>
+                            <h4>Wide-Column</h4>
+                            <p>Columns grouped in families. Cassandra, HBase. Analytics, time-series.</p>
+                        </div>
+                        <div class="concept-card glass-card">
+                            <div class="concept-icon">🕸️</div>
+                            <h4>Graph</h4>
+                            <p>Nodes and edges. Neo4j. Social networks, recommendations.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="lesson-section">
+                    <h3>Key Differences</h3>
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>Aspect</th>
+                                <th>SQL (Relational)</th>
+                                <th>NoSQL</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Schema</strong></td>
+                                <td>Fixed, predefined</td>
+                                <td>Flexible, dynamic</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Scaling</strong></td>
+                                <td>Vertical (scale up)</td>
+                                <td>Horizontal (scale out)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>ACID</strong></td>
+                                <td>Full compliance</td>
+                                <td>Often eventual consistency</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Joins</strong></td>
+                                <td>Native, efficient</td>
+                                <td>Limited or app-level</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Query Language</strong></td>
+                                <td>SQL (standardized)</td>
+                                <td>Varies by database</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Best For</strong></td>
+                                <td>Complex queries, transactions</td>
+                                <td>High throughput, flexible data</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section class="lesson-section">
+                    <h3>Code Comparison: Fetching User Orders</h3>
+                    <p>How you retrieve data differs significantly. SQL relies on joins, while NoSQL often requires
+                        denormalization or separate queries.</p>
+                    <div class="code-block"
+                        style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+                        <div>
+                            <div style="color: var(--info); font-weight: 600; margin-bottom: 0.5rem;">SQL (Relational)
+                            </div>
+                            <pre style="font-family: var(--font-mono); font-size: 0.8rem; line-height: 1.4;">
+<span class="keyword">SELECT</span> u.name, o.total 
+<span class="keyword">FROM</span> users u
+<span class="keyword">JOIN</span> orders o <span class="keyword">ON</span> u.id = o.user_id
+<span class="keyword">WHERE</span> u.id = 1;
+                            </pre>
+                            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem;">One query,
+                                database handles the complexity.</div>
+                        </div>
+                        <div style="border-left: 1px solid var(--border-light); padding-left: 1rem;">
+                            <div style="color: var(--success); font-weight: 600; margin-bottom: 0.5rem;">NoSQL
+                                (Document)</div>
+                            <pre style="font-family: var(--font-mono); font-size: 0.8rem; line-height: 1.4;">
+<span class="comment">// 1. Get User</span>
+db.users.findOne({_id: 1});
+
+<span class="comment">// 2. Get Orders (Separate Query)</span>
+db.orders.find({user_id: 1});
+                            </pre>
+                            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem;">Two queries,
+                                or requires denormalized data (orders inside user doc).</div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="lesson-section">
+                    <h3>Database Picker Quiz</h3>
+                    <p>Match each scenario to the best database type.</p>
+                    <div class="demo-container">
+                        <div class="demo-body">
+                            <div
+                                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 0.5rem; margin-bottom: 1.5rem;">
+                                <div class="db-type" onclick="selectDB('sql', this)">
+                                    <div class="db-icon">🐘</div>SQL
+                                </div>
+                                <div class="db-type" onclick="selectDB('kv', this)">
+                                    <div class="db-icon">🔑</div>Key-Value
+                                </div>
+                                <div class="db-type" onclick="selectDB('doc', this)">
+                                    <div class="db-icon">📄</div>Document
+                                </div>
+                                <div class="db-type" onclick="selectDB('graph', this)">
+                                    <div class="db-icon">🕸️</div>Graph
+                                </div>
+                            </div>
+                            <div id="selectedDB" style="text-align: center; margin-bottom: 1rem; font-weight: 600;">
+                            </div>
+                            <div id="scenarios">
+                                <div class="scenario" data-answer="sql" onclick="checkScenario(this)">Banking system
+                                    with complex transactions and strict consistency</div>
+                                <div class="scenario" data-answer="kv" onclick="checkScenario(this)">Session storage for
+                                    10M concurrent users</div>
+                                <div class="scenario" data-answer="doc" onclick="checkScenario(this)">Product catalog
+                                    where each item has different attributes</div>
+                                <div class="scenario" data-answer="graph" onclick="checkScenario(this)">Social network
+                                    finding friends-of-friends</div>
+                            </div>
+                            <button class="btn btn-secondary" onclick="resetQuiz()" style="margin-top: 1rem;">Reset
+                                Quiz</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="lesson-section">
+                    <h3>When to Choose</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="info-box tip">
+                            <div class="info-box-title">Choose SQL When</div>
+                            <ul style="margin: 0.5rem 0 0 1.5rem;">
+                                <li>Need ACID transactions</li>
+                                <li>Complex relationships & joins</li>
+                                <li>Structured, unchanging data</li>
+                                <li>Vertical scaling is sufficient</li>
+                            </ul>
+                        </div>
+                        <div class="info-box info">
+                            <div class="info-box-title">Choose NoSQL When</div>
+                            <ul style="margin: 0.5rem 0 0 1.5rem;">
+                                <li>Need horizontal scaling</li>
+                                <li>Schema flexibility required</li>
+                                <li>High write/read throughput</li>
+                                <li>Rapid development iterations</li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- NewSQL -->
+                <section class="lesson-section">
+                    <h3>NewSQL: Best of Both Worlds?</h3>
+                    <p>NewSQL databases aim for SQL's ACID guarantees with NoSQL's horizontal scalability.</p>
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>Database</th>
+                                <th>Key Feature</th>
+                                <th>Use Case</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Google Spanner</strong></td>
+                                <td>Global transactions, TrueTime</td>
+                                <td>Global financial systems</td>
+                            </tr>
+                            <tr>
+                                <td><strong>CockroachDB</strong></td>
+                                <td>PostgreSQL-compatible, distributed</td>
+                                <td>Multi-region apps</td>
+                            </tr>
+                            <tr>
+                                <td><strong>TiDB</strong></td>
+                                <td>MySQL-compatible, HTAP</td>
+                                <td>Analytics + transactions</td>
+                            </tr>
+                            <tr>
+                                <td><strong>YugabyteDB</strong></td>
+                                <td>PostgreSQL + Cassandra APIs</td>
+                                <td>Cloud-native apps</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <!-- Polyglot Persistence -->
+                <section class="lesson-section">
+                    <h3>Polyglot Persistence</h3>
+                    <p>Modern systems often use multiple databases, each for what it does best.</p>
+                    <div class="concept-grid">
+                        <div class="concept-card glass-card">
+                            <div class="concept-icon">🛒</div>
+                            <h4>E-commerce Example</h4>
+                            <ul style="margin: 0.5rem 0 0 1.5rem; font-size: 0.85rem;">
+                                <li>PostgreSQL → orders, transactions</li>
+                                <li>MongoDB → product catalog</li>
+                                <li>Redis → cart, sessions</li>
+                                <li>Elasticsearch → search</li>
+                            </ul>
+                        </div>
+                        <div class="concept-card glass-card">
+                            <div class="concept-icon">⚠️</div>
+                            <h4>Trade-offs</h4>
+                            <ul style="margin: 0.5rem 0 0 1.5rem; font-size: 0.85rem;">
+                                <li>Operational complexity</li>
+                                <li>Data consistency across stores</li>
+                                <li>Team expertise required</li>
+                                <li>Higher infrastructure costs</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="info-box info" style="margin-top: 1rem;">
+                        <div class="info-box-title">🏢 Used By</div>
+                        <p>Netflix uses Cassandra for user data, MySQL for billing, Elasticsearch for search. Uber uses
+                            MySQL, Redis, and Schemaless (custom NoSQL).</p>
+                    </div>
+                </section>
+
+                <div class="lesson-nav">
+                    <a href="07-replication.html" class="nav-btn">← Replication</a>
+                    <a href="09-cap-theorem.html" class="nav-btn">CAP Theorem →</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedDB = null;
+        function selectDB(db, el) {
+            document.querySelectorAll('.db-type').forEach(d => d.classList.remove('selected'));
+            el.classList.add('selected');
+            selectedDB = db;
+            document.getElementById('selectedDB').textContent = `Selected: ${el.querySelector('div:last-child')?.textContent || db.toUpperCase()}`;
+        }
+        function checkScenario(el) {
+            if (!selectedDB) { alert('Select a database type first!'); return; }
+            const correct = el.dataset.answer === selectedDB;
+            el.classList.add(correct ? 'correct' : 'incorrect');
+        }
+        function resetQuiz() {
+            selectedDB = null;
+            document.querySelectorAll('.db-type').forEach(d => d.classList.remove('selected'));
+            document.querySelectorAll('.scenario').forEach(s => s.classList.remove('correct', 'incorrect'));
+            document.getElementById('selectedDB').textContent = '';
+        }
+    </script>
+</body>
+
+</html>

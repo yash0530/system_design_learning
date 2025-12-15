@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Caching Strategies | System Design Mastery</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/main.css">
+    <style>
+        .cache-slots {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .cache-slot {
+            padding: 0.75rem 1rem;
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border-light);
+            border-radius: var(--radius-md);
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            transition: all 0.3s;
+        }
+
+        .cache-slot.filled {
+            border-color: var(--accent-primary);
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .cache-slot.hit {
+            border-color: var(--success);
+            background: rgba(16, 185, 129, 0.2);
+        }
+
+        .cache-slot.new {
+            border-color: var(--warning);
+            background: rgba(245, 158, 11, 0.2);
+        }
+
+        .strategy-card {
+            padding: 1.5rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-xl);
+        }
+
+        .strategy-name {
+            font-weight: 600;
+            color: var(--accent-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .strategy-flow {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-md);
+            margin: 1rem 0;
+        }
+
+        .flow-arrow {
+            color: var(--accent-primary);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="bg-pattern"></div>
+    <div class="bg-grid"></div>
+    <nav class="nav">
+        <div class="container nav-content"><a href="../index.html" class="nav-logo">System Design Mastery</a></div>
+    </nav>
+
+    <div class="lesson-container">
+        <div class="container">
+            <header class="lesson-header">
+                <div class="lesson-meta"><span class="lesson-number">⚡</span><span class="tag">Module 3</span></div>
+                <h1>Caching Strategies</h1>
+                <p style="color: var(--text-secondary); max-width: 700px;">Caching exploits locality — recently accessed
+                    data is likely to be accessed again. A well-designed cache can reduce latency by 100x.</p>
+            </header>
+
+            <div class="lesson-content">
+                <section class="lesson-section">
+                    <h3>The Power of Locality</h3>
+                    <div class="concept-grid">
+                        <div class="concept-card glass-card">
+                            <div class="concept-icon">⏱️</div>
+                            <h4>Latency Reduction</h4>
+                            <p>RAM: ~100ns. Network (Internet): ~100ms. Cache hits are 1000x faster.</p>
+                        </div>
+                        <div class="concept-card glass-card">
+                            <div class="concept-icon">📉</div>
+                            <h4>Load Reduction</h4>
+                            <p>80% of requests hit 20% of data. Caching removes that load.</p>
+                        </div>
+                        <div class="concept-card glass-card">
+                            <div class="concept-icon">💰</div>
+                            <h4>Cost Savings</h4>
+                            <p>Fewer database instances needed when cache absorbs load.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="lesson-section">
+                    <h3>LRU Cache Simulator</h3>
+                    <p>This Least Recently Used cache has capacity 4. On miss with full cache, the oldest item is
+                        evicted.</p>
+                    <div class="demo-container">
+                        <div class="demo-header"><span class="demo-dot red"></span><span
+                                class="demo-dot yellow"></span><span class="demo-dot green"></span><span
+                                class="demo-title">LRU Cache</span></div>
+                        <div class="demo-body">
+                            <div class="controls">
+                                <input type="text" class="input" id="keyInput" placeholder="Key (A, B, C...)"
+                                    maxlength="3" style="width: 120px;">
+                                <button class="btn btn-primary" onclick="accessKey()">Access</button>
+                                <button class="btn btn-secondary" onclick="accessSequence()">Demo: A,B,C,D,A,E</button>
+                                <button class="btn btn-secondary" onclick="resetCache()">Reset</button>
+                            </div>
+                            <div style="display: flex; gap: 2rem; align-items: center; margin-top: 1.5rem;">
+                                <div>
+                                    <div
+                                        style="font-weight: 600; margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.8rem;">
+                                        CACHE (MRU → LRU)</div>
+                                    <div class="cache-slots" id="cacheSlots"></div>
+                                </div>
+                                <div style="text-align: center;">
+                                    <div id="cacheResult" style="font-size: 1.5rem;">—</div>
+                                    <div style="font-size: 0.8rem; color: var(--text-muted);">Last Op</div>
+                                </div>
+                            </div>
+                            <div class="metrics-grid" style="margin-top: 1.5rem;">
+                                <div class="metric-card">
+                                    <div class="metric-value" id="hitRate">0%</div>
+                                    <div class="metric-label">Hit Rate</div>
+                                </div>
+                                <div class="metric-card">
+                                    <div class="metric-value" id="cacheHits">0</div>
+                                    <div class="metric-label">Hits</div>
+                                </div>
+                                <div class="metric-card">
+                                    <div class="metric-value" id="cacheMisses">0</div>
+                                    <div class="metric-label">Misses</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="lesson-section">
+                    <h3>Write Strategies</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
+                        <div class="strategy-card">
+                            <div class="strategy-name">Write-Through</div>
+                            <div class="strategy-flow">App <span class="flow-arrow">→</span> Cache <span
+                                    class="flow-arrow">→</span> DB <span class="flow-arrow">→</span> ✓</div>
+                            <p style="font-size: 0.9rem;">Write to both before returning. Consistent but slower writes.
+                            </p>
+                        </div>
+                        <div class="strategy-card">
+                            <div class="strategy-name">Write-Back</div>
+                            <div class="strategy-flow">App <span class="flow-arrow">→</span> Cache <span
+                                    class="flow-arrow">→</span> ✓ (async DB)</div>
+                            <p style="font-size: 0.9rem;">Write to cache only, sync later. Fast but risk of loss.</p>
+                        </div>
+                        <div class="strategy-card">
+                            <div class="strategy-name">Write-Around</div>
+                            <div class="strategy-flow">App <span class="flow-arrow">→</span> DB <span
+                                    class="flow-arrow">→</span> ✓</div>
+                            <p style="font-size: 0.9rem;">Skip cache on writes. Good for rarely re-read data.</p>
+                        </div>
+                        <div class="strategy-card">
+                            <div class="strategy-name">Cache-Aside</div>
+                            <div class="strategy-flow">Read: Cache? → Miss → DB → Cache</div>
+                            <p style="font-size: 0.9rem;">App manages cache. Most common pattern.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="lesson-section">
+                    <h3>Eviction Policies</h3>
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>Policy</th>
+                                <th>Evicts</th>
+                                <th>Best For</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>LRU</strong></td>
+                                <td>Least Recently Used</td>
+                                <td>General purpose</td>
+                            </tr>
+                            <tr>
+                                <td><strong>LFU</strong></td>
+                                <td>Least Frequently Used</td>
+                                <td>Stable popularity</td>
+                            </tr>
+                            <tr>
+                                <td><strong>FIFO</strong></td>
+                                <td>First In, First Out</td>
+                                <td>Streaming data</td>
+                            </tr>
+                            <tr>
+                                <td><strong>TTL</strong></td>
+                                <td>Expired items</td>
+                                <td>Time-sensitive data</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section class="lesson-section">
+                    <h3>Cache Invalidation</h3>
+                    <div class="info-box warning">
+                        <div class="info-box-title">The Hard Problem</div>
+                        <p>"There are only two hard things in CS: cache invalidation and naming things." When source
+                            data changes, cached copies become stale.</p>
+                    </div>
+                    <div class="concept-grid" style="margin-top: 1rem;">
+                        <div class="concept-card glass-card">
+                            <div class="concept-icon">🕐</div>
+                            <h4>TTL</h4>
+                            <p>Set expiration time. Simple but doesn't react to changes.</p>
+                        </div>
+                        <div class="concept-card glass-card">
+                            <div class="concept-icon">🔔</div>
+                            <h4>Event-Based</h4>
+                            <p>Publish invalidation when data changes. Real-time but complex.</p>
+                        </div>
+                        <div class="concept-card glass-card">
+                            <div class="concept-icon">🔄</div>
+                            <h4>Refresh-Ahead</h4>
+                            <p>Proactively refresh before expiry. Prevents misses on hot keys.</p>
+                        </div>
+                </section>
+
+                <!-- Cache Stampede -->
+                <section class="lesson-section">
+                    <h3>Cache Stampede (Thundering Herd)</h3>
+                    <p>When a popular cache key expires, hundreds of requests might hit the database simultaneously.</p>
+                    <div class="demo-container">
+                        <div class="demo-header">
+                            <span class="demo-dot red"></span>
+                            <span class="demo-dot yellow"></span>
+                            <span class="demo-dot green"></span>
+                            <span class="demo-title">Cache Stampede Visualization</span>
+                        </div>
+                        <div class="demo-body">
+                            <div class="controls">
+                                <button class="btn btn-primary" onclick="simulateStampede()">Simulate Stampede</button>
+                                <button class="btn btn-secondary" onclick="simulateWithLock()">With Distributed
+                                    Lock</button>
+                            </div>
+                            <div id="stampedeViz"
+                                style="display: flex; align-items: center; justify-content: space-around; margin-top: 1rem; min-height: 120px;">
+                                <div style="text-align: center;">
+                                    <div style="font-size: 2rem;">👥</div>
+                                    <div style="font-size: 0.8rem;">Requests</div>
+                                    <div id="requestCount" style="font-weight: 600;">0</div>
+                                </div>
+                                <div id="stampedeArrows" style="font-size: 1.5rem; color: var(--accent-primary);">→→→
+                                </div>
+                                <div
+                                    style="text-align: center; padding: 1rem; background: var(--warning); border-radius: var(--radius-md); color: black;">
+                                    <div style="font-size: 1.5rem;">⚡</div>
+                                    <div style="font-size: 0.8rem;">Cache</div>
+                                    <div id="cacheStatus" style="font-weight: 600;">MISS</div>
+                                </div>
+                                <div id="dbArrows" style="font-size: 1.5rem; color: var(--error);">→→→</div>
+                                <div
+                                    style="text-align: center; padding: 1rem; background: var(--bg-tertiary); border-radius: var(--radius-md);">
+                                    <div style="font-size: 1.5rem;">🗄️</div>
+                                    <div style="font-size: 0.8rem;">Database</div>
+                                    <div id="dbHits" style="font-weight: 600; color: var(--error);">0 hits</div>
+                                </div>
+                            </div>
+                            <div id="stampedeResult"
+                                style="margin-top: 1rem; padding: 0.75rem; background: var(--bg-tertiary); border-radius: var(--radius-md); text-align: center;">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="info-box tip" style="margin-top: 1rem;">
+                        <div class="info-box-title">💡 Solutions</div>
+                        <p><strong>Distributed Lock:</strong> Only one request fetches from DB, others wait.
+                            <strong>Stale-While-Revalidate:</strong> Serve stale data while refreshing in background.
+                            <strong>Probabilistic Early Expiration:</strong> Randomly refresh before TTL.
+                        </p>
+                    </div>
+                </section>
+
+                <!-- Distributed Caching -->
+                <section class="lesson-section">
+                    <h3>Distributed Caching</h3>
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>Solution</th>
+                                <th>Use Case</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Redis</strong></td>
+                                <td>Sessions, leaderboards, pub/sub</td>
+                                <td>Single-threaded, rich data structures</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Memcached</strong></td>
+                                <td>Simple key-value caching</td>
+                                <td>Multi-threaded, simpler</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Redis Cluster</strong></td>
+                                <td>Horizontal scaling</td>
+                                <td>Auto-sharding, 16384 hash slots</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="info-box info" style="margin-top: 1rem;">
+                        <div class="info-box-title">🏢 Used By</div>
+                        <p>Twitter uses Redis for timeline caching. GitHub uses Memcached. Instagram uses both Redis and
+                            Memcached for different workloads.</p>
+                    </div>
+                </section>
+
+                <!-- Quiz -->
+                <section class="lesson-section">
+                    <h3>Check Your Understanding</h3>
+                    <div class="quiz-container">
+                        <p class="quiz-question">
+                            Your e-commerce site shows product pages. Products rarely change but inventory updates
+                            frequently. Which caching pattern is best?
+                        </p>
+                        <div class="quiz-options" id="cachingQuizOptions">
+                            <div class="quiz-option" onclick="checkCachingAnswer(this, false)">
+                                Cache everything with 1-hour TTL
+                            </div>
+                            <div class="quiz-option" onclick="checkCachingAnswer(this, true)">
+                                Cache product details long-term, inventory with short TTL + event invalidation
+                            </div>
+                            <div class="quiz-option" onclick="checkCachingAnswer(this, false)">
+                                Don't cache — always fetch fresh data
+                            </div>
+                            <div class="quiz-option" onclick="checkCachingAnswer(this, false)">
+                                Cache only on the client side with localStorage
+                            </div>
+                        </div>
+                        <div id="cachingQuizFeedback" style="margin-top: 1rem; display: none;"></div>
+                    </div>
+                </section>
+
+                <div class="lesson-nav">
+                    <a href="02-load-balancing.html" class="nav-btn">← Load Balancing</a>
+                    <a href="04-data-partitioning.html" class="nav-btn">Data Partitioning →</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let cache = [], hits = 0, misses = 0;
+        const capacity = 4;
+
+        function accessKey() {
+            const key = document.getElementById('keyInput').value.trim().toUpperCase();
+            if (key) { access(key); document.getElementById('keyInput').value = ''; }
+        }
+
+        function access(key) {
+            const idx = cache.indexOf(key);
+            const result = document.getElementById('cacheResult');
+            if (idx !== -1) {
+                cache.splice(idx, 1); cache.unshift(key); hits++;
+                result.textContent = '✅ HIT'; result.style.color = 'var(--success)';
+            } else {
+                if (cache.length >= capacity) cache.pop();
+                cache.unshift(key); misses++;
+                result.textContent = '❌ MISS'; result.style.color = 'var(--error)';
+            }
+            updateDisplay(key, idx !== -1);
+        }
+
+        function accessSequence() { ['A', 'B', 'C', 'D', 'A', 'E'].forEach((k, i) => setTimeout(() => access(k), i * 600)); }
+        function resetCache() { cache = []; hits = misses = 0; document.getElementById('cacheResult').textContent = '—'; updateDisplay(); }
+
+        function updateDisplay(key, isHit) {
+            const slots = document.getElementById('cacheSlots');
+            slots.innerHTML = Array(capacity).fill(0).map((_, i) => {
+                if (cache[i]) {
+                    const cls = cache[i] === key ? (isHit ? 'hit' : 'new') : '';
+                    return `<div class="cache-slot filled ${cls}">${cache[i]}</div>`;
+                }
+                return '<div class="cache-slot"><span style="color:var(--text-muted)">Empty</span></div>';
+            }).join('');
+            const total = hits + misses;
+            document.getElementById('hitRate').textContent = total ? Math.round(hits / total * 100) + '%' : '0%';
+            document.getElementById('cacheHits').textContent = hits;
+            document.getElementById('cacheMisses').textContent = misses;
+        }
+        updateDisplay();
+
+        // Cache Stampede Simulation
+        function animateStampede(withLock) {
+            const viz = document.getElementById('stampedeViz');
+            // Reset arrows and status
+            document.getElementById('stampedeArrows').innerHTML = '→→→';
+            document.getElementById('dbArrows').innerHTML = '→→→';
+            document.getElementById('cacheStatus').textContent = 'MISS';
+            document.getElementById('cacheStatus').style.background = 'var(--warning)';
+            document.getElementById('dbHits').textContent = '0 hits';
+            document.getElementById('dbHits').style.color = 'var(--text-secondary)';
+            document.getElementById('stampedeResult').innerHTML = '<div style="color: var(--text-secondary)">Running simulation...</div>';
+
+            // Create particles
+            const count = 30; // 30 dots
+            document.getElementById('requestCount').textContent = count;
+
+            const containerRect = viz.getBoundingClientRect();
+            // Positions relative to container
+            // Request icon (start) -> Cache (mid) -> DB (end)
+            // Approximate percentages based on layout
+            const startX = 50;
+            const midX = 300; // Cache
+            const endX = 550; // DB
+
+            let dbHits = 0;
+            let completed = 0;
+
+            for (let i = 0; i < count; i++) {
+                const dot = document.createElement('div');
+                dot.style.position = 'absolute';
+                dot.style.width = '8px';
+                dot.style.height = '8px';
+                dot.style.borderRadius = '50%';
+                dot.style.background = 'var(--accent-primary)';
+                dot.style.left = startX + 'px';
+                dot.style.top = (50 + Math.random() * 40) + 'px'; // Random Y spread
+                dot.style.transition = 'all 0.5s linear';
+                dot.style.opacity = '0.8';
+                viz.style.position = 'relative'; // ensure container is positioned
+                viz.appendChild(dot);
+
+                // Animate to Cache
+                setTimeout(() => {
+                    dot.style.left = midX + 'px';
+
+                    setTimeout(() => {
+                        // At Cache
+                        if (withLock) {
+                            if (i === 0) {
+                                // First one goes to DB
+                                dot.style.background = 'var(--error)'; // Red for DB fetch
+                                dot.style.left = endX + 'px';
+                                document.getElementById('cacheStatus').textContent = 'LOCKED';
+                                document.getElementById('cacheStatus').style.background = 'var(--accent-primary)';
+                                document.getElementById('cacheStatus').style.color = 'white';
+
+                                setTimeout(() => {
+                                    // Returned from DB, populate cache
+                                    dbHits++;
+                                    document.getElementById('dbHits').textContent = dbHits + ' hits';
+                                    document.getElementById('dbHits').style.color = 'var(--success)';
+
+                                    // Signal others
+                                    document.getElementById('cacheStatus').textContent = 'POPULATED';
+                                    document.getElementById('cacheStatus').style.background = 'var(--success)';
+                                    dot.remove();
+                                }, 500);
+                            } else {
+                                // Others wait at cache
+                                dot.style.left = (midX + Math.random() * 20) + 'px'; // Bunch up at cache
+                                setTimeout(() => {
+                                    // Cache is populated, dots turn green (HIT)
+                                    dot.style.background = 'var(--success)';
+                                    dot.style.transform = 'scale(1.5)';
+                                    dot.style.opacity = '0'; // Fade out
+
+                                    completed++;
+                                    if (completed >= count - 1) {
+                                        document.getElementById('stampedeResult').innerHTML = '<span style="color: var(--success);">✅ WITH LOCK: Only 1 request hit the DB. 29 requests waited for cache!</span>';
+                                    }
+                                    setTimeout(() => dot.remove(), 300);
+                                }, 600 + Math.random() * 200); // Random wait
+                            }
+                        } else {
+                            // NO LOCK - Stampede!
+                            document.getElementById('cacheStatus').textContent = 'MISS';
+                            dot.style.background = 'var(--error)';
+                            dot.style.left = endX + 'px';
+
+                            setTimeout(() => {
+                                dbHits++;
+                                document.getElementById('dbHits').textContent = dbHits + ' hits';
+                                document.getElementById('dbHits').style.color = 'var(--error)';
+                                dot.remove();
+
+                                if (dbHits === count) {
+                                    document.getElementById('stampedeResult').innerHTML = '<span style="color: var(--error);">⚠️ STAMPEDE! All ' + count + ' requests hit the database simultaneously!</span>';
+                                }
+                            }, 500);
+                        }
+                    }, 500); // Wait at start
+                }, i * 30); // Stagger start
+            }
+        }
+
+        function simulateStampede() {
+            animateStampede(false);
+        }
+
+        function simulateWithLock() {
+            animateStampede(true);
+        }
+
+        // Quiz
+        function checkCachingAnswer(el, correct) {
+            const options = document.querySelectorAll('#cachingQuizOptions .quiz-option');
+            options.forEach(opt => { opt.style.pointerEvents = 'none'; opt.classList.remove('correct', 'incorrect'); });
+            el.classList.add(correct ? 'correct' : 'incorrect');
+            if (!correct) options[1].classList.add('correct');
+            const feedback = document.getElementById('cachingQuizFeedback');
+            feedback.style.display = 'block';
+            feedback.innerHTML = correct
+                ? '<div class="info-box tip"><div class="info-box-title">✅ Correct!</div><p>Different data has different caching needs. Static product info can be cached aggressively, while inventory needs real-time accuracy through short TTLs or event-based invalidation.</p></div>'
+                : '<div class="info-box warning"><div class="info-box-title">❌ Not quite</div><p>A one-size-fits-all TTL means either inventory is stale (bad for overselling) or product details are re-fetched too often (wasted resources).</p></div>';
+        }
+    </script>
+</body>
+
+</html>

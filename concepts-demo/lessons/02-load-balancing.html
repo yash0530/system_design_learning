@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Load Balancing | System Design Mastery</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="../styles/main.css">
+    <style>
+        .lb-container {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+            min-height: 450px;
+        }
+
+        .lb-clients {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .lb-client {
+            width: 50px;
+            height: 50px;
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border-light);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .lb-client:hover {
+            border-color: var(--accent-primary);
+            transform: translateY(-2px);
+        }
+
+        .lb-client.active {
+            border-color: var(--accent-primary);
+            background: rgba(99, 102, 241, 0.1);
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
+        }
+
+        .lb-client.active::after {
+            content: 'Selected';
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.7rem;
+            color: var(--accent-primary);
+            white-space: nowrap;
+        }
+
+        .lb-balancer {
+            width: 80px;
+            height: 80px;
+            background: var(--accent-gradient);
+            border-radius: var(--radius-xl);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-glow);
+        }
+
+        .lb-servers {
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .lb-server {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem;
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border-light);
+            border-radius: var(--radius-lg);
+            min-width: 80px;
+            transition: all 0.3s;
+        }
+
+        .lb-server.active {
+            border-color: var(--success);
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+        }
+
+        .lb-server-icon {
+            font-size: 1.5rem;
+        }
+
+        .lb-server-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .lb-server-stats {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .lb-server-bar {
+            width: 100%;
+            height: 6px;
+            background: var(--bg-secondary);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .lb-server-fill {
+            height: 100%;
+            background: var(--accent-primary);
+            transition: width 0.3s;
+        }
+
+        .request-dot {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: var(--accent-primary);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--accent-primary);
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .algo-description {
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-lg);
+            padding: 1rem 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .algo-name {
+            font-weight: 600;
+            color: var(--accent-primary);
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="bg-pattern"></div>
+    <div class="bg-grid"></div>
+
+    <nav class="nav">
+        <div class="container nav-content">
+            <a href="../index.html" class="nav-logo">System Design Mastery</a>
+            <ul class="nav-links">
+                <li><a href="../index.html#lessons">All Lessons</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="lesson-container">
+        <div class="container">
+            <header class="lesson-header">
+                <div class="lesson-meta">
+                    <span class="lesson-number">⚖️</span>
+                    <span class="tag">Module 2</span>
+                </div>
+                <h1>Load Balancing</h1>
+                <p style="color: var(--text-secondary); max-width: 700px;">
+                    A load balancer distributes incoming traffic across multiple servers to ensure no
+                    single server bears too much load. It improves responsiveness, availability, and
+                    enables horizontal scaling.
+                </p>
+            </header>
+
+            <div class="lesson-content">
+
+                <!-- Core Concepts -->
+                <section class="lesson-section">
+                    <h3>Why Load Balancing?</h3>
+                    <div class="concept-grid">
+                        <div class="concept-card glass-card">
+                            <div class="concept-icon">⚡</div>
+                            <h4>Better Performance</h4>
+                            <p>Distribute work evenly so no single server becomes a bottleneck.</p>
+                        </div>
+                        <div class="concept-card glass-card">
+                            <div class="concept-icon">🛡️</div>
+                            <h4>High Availability</h4>
+                            <p>If a server fails, traffic is routed to healthy servers automatically.</p>
+                        </div>
+                        <div class="concept-card glass-card">
+                            <div class="concept-icon">📈</div>
+                            <h4>Easy Scaling</h4>
+                            <p>Add or remove servers without disrupting the service.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Interactive Visualization -->
+                <section class="lesson-section">
+                    <h3>Interactive Load Balancer Simulator</h3>
+                    <p style="margin-bottom: 1rem;">
+                        Watch how different algorithms distribute requests. Click "Send Request" to see
+                        traffic flow to servers based on the selected algorithm.
+                    </p>
+
+                    <div class="demo-container">
+                        <div class="demo-header">
+                            <span class="demo-dot red"></span>
+                            <span class="demo-dot yellow"></span>
+                            <span class="demo-dot green"></span>
+                            <span class="demo-title">Load Balancer Visualization</span>
+                        </div>
+                        <div class="demo-body">
+                            <div class="controls">
+                                <div class="control-group">
+                                    <label class="control-label">Algorithm:</label>
+                                    <select class="select" id="algorithmSelect" onchange="changeAlgorithm()">
+                                        <option value="round-robin">Round Robin</option>
+                                        <option value="least-connections">Least Connections</option>
+                                        <option value="weighted-round-robin">Weighted Round Robin</option>
+                                        <option value="ip-hash">IP Hash</option>
+                                        <option value="random">Random</option>
+                                    </select>
+                                </div>
+                                <button class="btn btn-primary" onclick="sendRequest()">Send Request</button>
+                                <button class="btn btn-secondary" onclick="sendBurst()">Send 10 Requests</button>
+                                <button class="btn btn-secondary" onclick="resetServers()">Reset</button>
+                            </div>
+
+                            <div class="lb-container" id="lbContainer">
+                                <div class="lb-clients">
+                                    <div class="lb-client active" onclick="selectClient(0)">👤</div>
+                                    <div class="lb-client" onclick="selectClient(1)">👤</div>
+                                    <div class="lb-client" onclick="selectClient(2)">👤</div>
+                                </div>
+                                <div class="lb-balancer">⚖️</div>
+                                <div class="lb-servers" id="serversContainer"></div>
+                            </div>
+
+                            <div class="algo-description" id="algoDescription">
+                                <div class="algo-name">Round Robin</div>
+                                <p>Requests are distributed sequentially to each server in turn. Simple and fair when
+                                    servers have equal capacity.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="metrics-grid" style="margin-top: 1.5rem;">
+                        <div class="metric-card glass-card">
+                            <div class="metric-value" id="totalRequests">0</div>
+                            <div class="metric-label">Total Requests</div>
+                        </div>
+                        <div class="metric-card glass-card">
+                            <div class="metric-value" id="avgLoad">0%</div>
+                            <div class="metric-label">Average Load</div>
+                        </div>
+                        <div class="metric-card glass-card">
+                            <div class="metric-value" id="maxLoad">0%</div>
+                            <div class="metric-label">Max Server Load</div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Algorithms Deep Dive -->
+                <section class="lesson-section">
+                    <h3>Load Balancing Algorithms</h3>
+
+                    <div class="tabs">
+                        <button class="tab active" onclick="showTab('round-robin')">Round Robin</button>
+                        <button class="tab" onclick="showTab('least-conn')">Least Connections</button>
+                        <button class="tab" onclick="showTab('weighted')">Weighted</button>
+                        <button class="tab" onclick="showTab('ip-hash')">IP Hash</button>
+                    </div>
+
+                    <div class="tab-content active" id="tab-round-robin">
+                        <h4>Round Robin</h4>
+                        <p>The simplest algorithm. Requests are sent to servers in circular order: 1 → 2 → 3 → 1 → 2 →
+                            3...</p>
+
+                        <div class="info-box tip">
+                            <div class="info-box-title">✅ Best For</div>
+                            <p>Homogeneous servers with similar capacity. Stateless requests where any server can handle
+                                any request.</p>
+                        </div>
+
+                        <div class="info-box warning">
+                            <div class="info-box-title">⚠️ Limitations</div>
+                            <p>Doesn't account for current server load or request complexity. A slow query on Server 1
+                                doesn't affect future routing decisions.</p>
+                        </div>
+                    </div>
+
+                    <div class="tab-content" id="tab-least-conn">
+                        <h4>Least Connections</h4>
+                        <p>Routes requests to the server with the fewest active connections. More intelligent than Round
+                            Robin.</p>
+
+                        <div class="info-box tip">
+                            <div class="info-box-title">✅ Best For</div>
+                            <p>When requests have varying durations. Long-running connections (WebSockets, database
+                                queries) benefit greatly.</p>
+                        </div>
+
+                        <div class="code-block">
+                            <span class="keyword">function</span> <span class="function">selectServer</span>(servers) {
+                            <span class="keyword">return</span> servers.<span class="function">reduce</span>((min,
+                            server) =>
+                            server.connections < min.connections ? server : min ); } </div>
+                        </div>
+
+                        <div class="tab-content" id="tab-weighted">
+                            <h4>Weighted Round Robin</h4>
+                            <p>Like Round Robin, but servers have weights. A server with weight 3 gets 3x more requests
+                                than weight 1.</p>
+
+                            <div class="info-box tip">
+                                <div class="info-box-title">✅ Best For</div>
+                                <p>Heterogeneous server pools. When some servers are more powerful than others.</p>
+                            </div>
+
+                            <table class="comparison-table">
+                                <thead>
+                                    <tr>
+                                        <th>Server</th>
+                                        <th>Weight</th>
+                                        <th>Traffic Share</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Server 1</td>
+                                        <td>5</td>
+                                        <td>50%</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Server 2</td>
+                                        <td>3</td>
+                                        <td>30%</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Server 3</td>
+                                        <td>2</td>
+                                        <td>20%</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="tab-content" id="tab-ip-hash">
+                            <h4>IP Hash</h4>
+                            <p>The client's IP address is hashed to determine which server handles the request. Same IP
+                                always goes to the same server.</p>
+
+                            <div class="info-box tip">
+                                <div class="info-box-title">✅ Best For</div>
+                                <p>Session persistence without cookies. Shopping carts, logged-in user sessions.</p>
+                            </div>
+
+                            <div class="info-box warning">
+                                <div class="info-box-title">⚠️ Limitations</div>
+                                <p>Uneven distribution if many clients share an IP (NAT, corporate proxies). Server
+                                    changes break affinity.</p>
+                            </div>
+                        </div>
+                </section>
+
+                <!-- Health Checks -->
+                <section class="lesson-section">
+                    <h3>Health Checks</h3>
+                    <p>
+                        Load balancers must verify servers are healthy before routing traffic. There are two main
+                        approaches:
+                    </p>
+
+                    <div class="concept-grid" style="margin-top: 1rem;">
+                        <div class="concept-card glass-card">
+                            <div class="concept-icon">💓</div>
+                            <h4>Active Health Checks</h4>
+                            <p>
+                                Load balancer periodically sends probe requests (ping, HTTP GET /health) to each server.
+                                If a server fails to respond, it's marked unhealthy.
+                            </p>
+                        </div>
+                        <div class="concept-card glass-card">
+                            <div class="concept-icon">👁️</div>
+                            <h4>Passive Health Checks</h4>
+                            <p>
+                                Monitor real traffic for errors. If a server returns too many 5xx errors or timeouts,
+                                mark it unhealthy. No extra probe traffic required.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="demo-container" style="margin-top: 1.5rem;">
+                        <div class="demo-header">
+                            <span class="demo-dot red"></span>
+                            <span class="demo-dot yellow"></span>
+                            <span class="demo-dot green"></span>
+                            <span class="demo-title">Health Check Simulation</span>
+                        </div>
+                        <div class="demo-body">
+                            <div class="controls">
+                                <button class="btn btn-primary" onclick="simulateHealthCheck()">Run Health
+                                    Check</button>
+                                <button class="btn btn-secondary" onclick="failRandomServer()">Fail Random
+                                    Server</button>
+                                <button class="btn btn-secondary" onclick="resetHealthServers()">Reset All</button>
+                            </div>
+                            <div id="healthServers"
+                                style="display: flex; gap: 1rem; justify-content: center; margin-top: 1rem; flex-wrap: wrap;">
+                            </div>
+                            <div id="healthLog"
+                                style="margin-top: 1rem; padding: 0.75rem; background: var(--bg-tertiary); border-radius: var(--radius-md); font-size: 0.85rem; color: var(--text-muted); max-height: 100px; overflow-y: auto;">
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Layer 4 vs Layer 7 -->
+                <section class="lesson-section">
+                    <h3>Layer 4 vs Layer 7 Load Balancing</h3>
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>Aspect</th>
+                                <th>Layer 4 (Transport)</th>
+                                <th>Layer 7 (Application)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Works with</strong></td>
+                                <td>TCP/UDP packets</td>
+                                <td>HTTP/HTTPS requests</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Speed</strong></td>
+                                <td>Very fast, less CPU</td>
+                                <td>Slower, more CPU</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Routing decisions</strong></td>
+                                <td>IP, port only</td>
+                                <td>URL, headers, cookies</td>
+                            </tr>
+                            <tr>
+                                <td><strong>SSL termination</strong></td>
+                                <td>No (pass-through)</td>
+                                <td>Yes</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Use case</strong></td>
+                                <td>High throughput, simple</td>
+                                <td>Microservices, API routing</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <!-- Real Config Example -->
+                <section class="lesson-section">
+                    <h3>Real-World Configuration</h3>
+                    <p>Here's how you'd configure Nginx as a load balancer:</p>
+                    <div class="code-block">
+                        <span class="comment"># nginx.conf - Upstream and load balancing</span>
+                        <span class="keyword">upstream</span> backend {
+                        <span class="function">least_conn</span>; <span class="comment"># Algorithm</span>
+                        <span class="keyword">server</span> 10.0.0.1:8080 <span class="function">weight=3</span>;
+                        <span class="keyword">server</span> 10.0.0.2:8080 <span class="function">weight=1</span>;
+                        <span class="keyword">server</span> 10.0.0.3:8080 <span class="function">backup</span>; <span
+                            class="comment"># Only if others fail</span>
+                        }
+
+                        <span class="keyword">server</span> {
+                        <span class="keyword">location</span> / {
+                        <span class="function">proxy_pass</span> http://backend;
+                        <span class="function">proxy_connect_timeout</span> 5s;
+                        <span class="function">proxy_next_upstream</span> error timeout;
+                        }
+                        }
+                    </div>
+                    <div class="info-box info" style="margin-top: 1rem;">
+                        <div class="info-box-title">🏢 Used By</div>
+                        <p>Netflix uses Zuul for API gateway load balancing. Stripe uses HAProxy. Discord uses
+                            Cloudflare for DDoS protection + load balancing.</p>
+                    </div>
+                </section>
+
+                <!-- Quiz -->
+                <section class="lesson-section">
+                    <h3>Check Your Understanding</h3>
+                    <div class="quiz-container">
+                        <p class="quiz-question">
+                            You're building a real-time chat application with WebSocket connections that last several
+                            minutes. Users complain about uneven performance. Which load balancing algorithm should you
+                            use?
+                        </p>
+                        <div class="quiz-options">
+                            <div class="quiz-option" onclick="checkAnswer(this, false)">
+                                Round Robin — it ensures even distribution
+                            </div>
+                            <div class="quiz-option" onclick="checkAnswer(this, true)">
+                                Least Connections — accounts for long-lived connections
+                            </div>
+                            <div class="quiz-option" onclick="checkAnswer(this, false)">
+                                IP Hash — ensures session persistence
+                            </div>
+                            <div class="quiz-option" onclick="checkAnswer(this, false)">
+                                Random — prevents predictable patterns
+                            </div>
+                        </div>
+                        <div id="quizFeedback" style="margin-top: 1rem; display: none;"></div>
+                    </div>
+                </section>
+
+                <div class="lesson-nav">
+                    <a href="01-fundamentals.html" class="nav-btn">← Fundamentals</a>
+                    <a href="03-caching.html" class="nav-btn">Caching →</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/app.js"></script>
+    <script>
+        // State
+        let servers = [];
+        let currentIndex = 0;
+        let totalRequests = 0;
+        let currentAlgo = 'round-robin';
+
+        // Client simulation
+        const clients = [
+            { id: 0, ip: '192.168.1.10', name: 'Client A' },
+            { id: 1, ip: '192.168.1.11', name: 'Client B' },
+            { id: 2, ip: '192.168.1.12', name: 'Client C' }
+        ];
+        let selectedClientIndex = 0;
+
+        function selectClient(index) {
+            selectedClientIndex = index;
+            document.querySelectorAll('.lb-client').forEach((el, i) => {
+                if (i === index) el.classList.add('active');
+                else el.classList.remove('active');
+            });
+        }
+
+        const algorithms = {
+            'round-robin': {
+                name: 'Round Robin',
+                desc: 'Requests are distributed sequentially to each server in turn. Simple and fair when servers have equal capacity.',
+                select: () => {
+                    const server = servers[currentIndex % servers.length];
+                    currentIndex++;
+                    return server;
+                }
+            },
+            'least-connections': {
+                name: 'Least Connections',
+                desc: 'Routes to the server with the fewest active connections. Ideal for requests with varying durations.',
+                select: () => servers.reduce((min, s) => s.connections < min.connections ? s : min)
+            },
+            'weighted-round-robin': {
+                name: 'Weighted Round Robin',
+                desc: 'Servers with higher weights receive proportionally more traffic. Server 1 has weight 3, others have weight 1.',
+                select: () => {
+                    // Simplified: weighted index
+                    const weights = [3, 1, 1, 1];
+                    const expanded = [];
+                    servers.forEach((s, i) => {
+                        for (let j = 0; j < (weights[i] || 1); j++) expanded.push(s);
+                    });
+                    const server = expanded[currentIndex % expanded.length];
+                    currentIndex++;
+                    return server;
+                }
+            },
+            'ip-hash': {
+                name: 'IP Hash',
+                desc: 'Client IP is hashed to select a server. Same client always reaches the same server (session affinity).',
+                select: () => {
+                    // Consistent hashing based on selected client's IP
+                    const ip = clients[selectedClientIndex].ip;
+                    // Simple hash: sum of octets
+                    const sum = ip.split('.').reduce((acc, octet) => acc + parseInt(octet), 0);
+                    return servers[sum % servers.length];
+                }
+            },
+            'random': {
+                name: 'Random',
+                desc: 'Randomly selects a server for each request. Simple but can lead to uneven distribution.',
+                select: () => servers[Math.floor(Math.random() * servers.length)]
+            }
+        };
+
+        function initServers() {
+            const container = document.getElementById('serversContainer');
+            container.innerHTML = '';
+            servers = [];
+
+            for (let i = 0; i < 4; i++) {
+                const server = {
+                    id: `S${i + 1}`,
+                    connections: 0,
+                    element: null
+                };
+
+                const el = document.createElement('div');
+                el.className = 'lb-server';
+                el.innerHTML = `
+          <div class="lb-server-icon">
+              <!-- server icon remains, weight badge added via CSS/JS -->
+              🖥️
+              <span class="weight-badge" style="display: none; position: absolute; top: -5px; right: -5px; background: var(--accent-primary); color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 0.7rem; display: flex; align-items: center; justify-content: center; border: 2px solid var(--bg-tertiary);">x1</span>
+          </div>
+          <div class="lb-server-name">${server.id}</div>
+          <div class="lb-server-stats"><span class="conn-count">0</span> connections</div>
+          <div class="lb-server-bar"><div class="lb-server-fill" style="width: 0%"></div></div>
+        `;
+
+                server.element = el;
+                servers.push(server);
+                container.appendChild(el);
+            }
+        }
+
+        function changeAlgorithm() {
+            currentAlgo = document.getElementById('algorithmSelect').value;
+            currentIndex = 0;
+
+            const algo = algorithms[currentAlgo];
+            document.getElementById('algoDescription').innerHTML = `
+        <div class="algo-name">${algo.name}</div>
+        <p>${algo.desc}</p>
+      `;
+
+            // Update visuals based on algo
+            const isWeighted = currentAlgo === 'weighted-round-robin';
+            const isIpHash = currentAlgo === 'ip-hash';
+
+            // Show/Hide weights
+            document.querySelectorAll('.lb-server').forEach((el, i) => {
+                const badge = el.querySelector('.weight-badge');
+                if (badge) {
+                    badge.style.display = isWeighted ? 'flex' : 'none';
+                    if (isWeighted) {
+                        const weights = [3, 1, 1, 1];
+                        badge.textContent = 'x' + (weights[i] || 1);
+                    }
+                }
+            });
+
+            // IP Hash visual cue
+            if (isIpHash) {
+                document.getElementById('algoDescription').innerHTML += `
+                <div class="info-box tip" style="margin-top: 0.5rem; padding: 0.5rem;">
+                    ☝️ Tip: Click on a Client (👤) to change the source IP!
+                </div>`;
+            }
+        }
+
+        function sendRequest() {
+            const algo = algorithms[currentAlgo];
+            const server = algo.select();
+
+            server.connections++;
+            totalRequests++;
+
+            // Animate
+            server.element.classList.add('active');
+            updateServerDisplay(server);
+            updateMetrics();
+
+            // Animate request dot
+            animateRequest(server);
+
+            // Simulate request completion
+            setTimeout(() => {
+                server.connections = Math.max(0, server.connections - 1);
+                if (server.connections === 0) {
+                    server.element.classList.remove('active');
+                }
+                updateServerDisplay(server);
+                updateMetrics();
+            }, 800 + Math.random() * 1200);
+        }
+
+        function sendBurst() {
+            for (let i = 0; i < 10; i++) {
+                setTimeout(() => sendRequest(), i * 100);
+            }
+        }
+
+        function animateRequest(targetServer) {
+            const container = document.getElementById('lbContainer');
+            const balancer = container.querySelector('.lb-balancer');
+            const serverEl = targetServer.element;
+
+            const containerRect = container.getBoundingClientRect();
+            const balancerRect = balancer.getBoundingClientRect();
+            const serverRect = serverEl.getBoundingClientRect();
+
+            const dot = document.createElement('div');
+            dot.className = 'request-dot';
+
+            // Start at selected client
+            const clientEls = document.querySelectorAll('.lb-client');
+            const clientRect = clientEls[selectedClientIndex].getBoundingClientRect();
+
+            const startX = clientRect.left - containerRect.left + clientRect.width / 2 - 6;
+            const startY = clientRect.top - containerRect.top + clientRect.height / 2 - 6;
+
+            // Middle point (Balancer)
+            const midX = balancerRect.left - containerRect.left + balancerRect.width / 2 - 6;
+            const midY = balancerRect.top - containerRect.top + balancerRect.height / 2 - 6;
+
+            // End at server
+            const endX = serverRect.left - containerRect.left + serverRect.width / 2 - 6;
+            const endY = serverRect.top - containerRect.top + serverRect.height / 2 - 6;
+
+            // Two-step animation: Client -> Balancer -> Server
+            dot.style.left = startX + 'px';
+            dot.style.top = startY + 'px';
+            container.appendChild(dot);
+
+            // Animate to Balancer
+            requestAnimationFrame(() => {
+                dot.style.transition = 'all 0.3s ease-in';
+                dot.style.left = midX + 'px';
+                dot.style.top = midY + 'px';
+
+                // Then to Server
+                setTimeout(() => {
+                    dot.style.transition = 'all 0.3s ease-out';
+                    dot.style.left = endX + 'px';
+                    dot.style.top = endY + 'px';
+                }, 300);
+            });
+
+            setTimeout(() => dot.remove(), 600);
+
+            setTimeout(() => dot.remove(), 500);
+        }
+
+        function updateServerDisplay(server) {
+            const fill = server.element.querySelector('.lb-server-fill');
+            const count = server.element.querySelector('.conn-count');
+            const percent = Math.min(100, server.connections * 20);
+            fill.style.width = percent + '%';
+            count.textContent = server.connections;
+        }
+
+        function updateMetrics() {
+            document.getElementById('totalRequests').textContent = totalRequests;
+
+            const totalConn = servers.reduce((sum, s) => sum + s.connections, 0);
+            const avgLoad = Math.round((totalConn / servers.length) * 20);
+            document.getElementById('avgLoad').textContent = avgLoad + '%';
+
+            const maxConn = Math.max(...servers.map(s => s.connections));
+            document.getElementById('maxLoad').textContent = (maxConn * 20) + '%';
+        }
+
+        function resetServers() {
+            servers.forEach(s => {
+                s.connections = 0;
+                s.element.classList.remove('active');
+                updateServerDisplay(s);
+            });
+            currentIndex = 0;
+            totalRequests = 0;
+            updateMetrics();
+        }
+
+        function showTab(tabId) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+            event.target.classList.add('active');
+            document.getElementById('tab-' + tabId).classList.add('active');
+        }
+
+        function checkAnswer(element, correct) {
+            const options = document.querySelectorAll('.quiz-option');
+            options.forEach(opt => {
+                opt.style.pointerEvents = 'none';
+                opt.classList.remove('correct', 'incorrect');
+            });
+
+            element.classList.add(correct ? 'correct' : 'incorrect');
+            if (!correct) options[1].classList.add('correct');
+
+            const feedback = document.getElementById('quizFeedback');
+            feedback.style.display = 'block';
+            feedback.innerHTML = correct
+                ? `<div class="info-box tip"><div class="info-box-title">✅ Correct!</div><p>
+            Least Connections is ideal for long-lived connections like WebSockets. Round Robin 
+            would route new connections evenly, but wouldn't account for servers still handling 
+            many open connections.
+          </p></div>`
+                : `<div class="info-box warning"><div class="info-box-title">❌ Not quite</div><p>
+            With long-lived WebSocket connections, Round Robin leads to uneven load — some servers 
+            accumulate many connections while new ones keep going to servers that haven't finished 
+            their requests. Least Connections solves this.
+          </p></div>`;
+        }
+
+        // Initialize
+        initServers();
+
+        // Health Check Simulation
+        let healthServers = [];
+        function initHealthServers() {
+            const container = document.getElementById('healthServers');
+            healthServers = [];
+            container.innerHTML = '';
+            for (let i = 1; i <= 4; i++) {
+                const s = { id: i, healthy: true };
+                healthServers.push(s);
+                const el = document.createElement('div');
+                el.className = 'lb-server';
+                el.id = 'health-s' + i;
+                el.innerHTML = `<div class="lb-server-icon">🖥️</div><div class="lb-server-name">S${i}</div><div class="lb-server-stats" style="color: var(--success);">✓ Healthy</div>`;
+                container.appendChild(el);
+            }
+        }
+
+        function simulateHealthCheck() {
+            const log = document.getElementById('healthLog');
+            log.innerHTML += '<div>🔍 Running health checks...</div>';
+            healthServers.forEach((s, i) => {
+                setTimeout(() => {
+                    const el = document.getElementById('health-s' + s.id);
+                    el.style.transition = 'all 0.3s';
+                    el.style.transform = 'scale(1.05)';
+                    setTimeout(() => el.style.transform = 'scale(1)', 200);
+                    if (s.healthy) {
+                        log.innerHTML += `<div style="color: var(--success);">✓ S${s.id}: 200 OK (12ms)</div>`;
+                    } else {
+                        log.innerHTML += `<div style="color: var(--error);">✗ S${s.id}: Connection timeout</div>`;
+                    }
+                    log.scrollTop = log.scrollHeight;
+                }, i * 300);
+            });
+        }
+
+        function failRandomServer() {
+            const healthy = healthServers.filter(s => s.healthy);
+            if (healthy.length === 0) return;
+            const s = healthy[Math.floor(Math.random() * healthy.length)];
+            s.healthy = false;
+            const el = document.getElementById('health-s' + s.id);
+            el.querySelector('.lb-server-stats').innerHTML = '<span style="color: var(--error);">✗ Unhealthy</span>';
+            el.style.opacity = '0.5';
+            document.getElementById('healthLog').innerHTML += `<div style="color: var(--error);">⚠️ S${s.id} failed!</div>`;
+        }
+
+        function resetHealthServers() {
+            document.getElementById('healthLog').innerHTML = '';
+            initHealthServers();
+        }
+        initHealthServers();
+    </script>
+</body>
+
+</html>

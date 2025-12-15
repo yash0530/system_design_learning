@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Communication | System Design Mastery</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/main.css">
+    <style>
+        .protocol-demo {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        .protocol-card {
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-light);
+            border-radius: var(--radius-lg);
+        }
+
+        .protocol-card.active {
+            border-color: var(--accent-primary);
+        }
+
+        .protocol-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .protocol-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .timeline-container {
+            height: 120px;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-md);
+            padding: 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .timeline-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            position: absolute;
+            left: 0.5rem;
+        }
+
+        .timeline-label.client {
+            top: 10px;
+        }
+
+        .timeline-label.server {
+            bottom: 10px;
+        }
+
+        .timeline-line {
+            position: absolute;
+            left: 50px;
+            right: 10px;
+            height: 2px;
+            background: var(--border-light);
+        }
+
+        .timeline-line.client {
+            top: 25px;
+        }
+
+        .timeline-line.server {
+            bottom: 25px;
+        }
+
+        .message {
+            position: absolute;
+            font-size: 0.65rem;
+            padding: 2px 6px;
+            border-radius: 3px;
+            white-space: nowrap;
+            animation: fadeIn 0.3s;
+        }
+
+        .message.request {
+            background: var(--accent-primary);
+            color: white;
+        }
+
+        .message.response {
+            background: var(--success);
+            color: white;
+        }
+
+        .message.push {
+            background: var(--warning);
+            color: black;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .arrow {
+            position: absolute;
+            width: 0;
+            height: 0;
+            border-style: solid;
+        }
+
+        .arrow.down {
+            border-width: 6px 4px 0 4px;
+            border-color: var(--accent-primary) transparent transparent transparent;
+        }
+
+        .arrow.up {
+            border-width: 0 4px 6px 4px;
+            border-color: transparent transparent var(--success) transparent;
+        }
+
+        .comparison-icons {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            margin: 0.5rem 0;
+        }
+
+        .comparison-icon {
+            font-size: 1.5rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="bg-pattern"></div>
+    <div class="bg-grid"></div>
+    <nav class="nav">
+        <div class="container nav-content"><a href="../index.html" class="nav-logo">System Design Mastery</a></div>
+    </nav>
+
+    <div class="lesson-container">
+        <div class="container">
+            <header class="lesson-header">
+                <div class="lesson-meta"><span class="lesson-number">📡</span><span class="tag">Module 11</span></div>
+                <h1>Real-Time Communication</h1>
+                <p style="color: var(--text-secondary); max-width: 700px;">How do servers push data to clients? Explore
+                    the trade-offs between polling, long polling, WebSockets, and Server-Sent Events.</p>
+            </header>
+
+            <div class="lesson-content">
+                <section class="lesson-section">
+                    <h3>Communication Patterns</h3>
+                    <div class="concept-grid">
+                        <div class="concept-card glass-card">
+                            <div class="concept-icon">🔄</div>
+                            <h4>Polling (AJAX)</h4>
+                            <p>Client asks repeatedly on interval. Simple but wasteful.</p>
+                        </div>
+                        <div class="concept-card glass-card">
+                            <div class="concept-icon">⏳</div>
+                            <h4>Long Polling</h4>
+                            <p>Server holds request until data available. Better but still request/response.</p>
+                        </div>
+                        <div class="concept-card glass-card">
+                            <div class="concept-icon">🔌</div>
+                            <h4>WebSockets</h4>
+                            <p>Full-duplex persistent connection. Both sides can send anytime.</p>
+                        </div>
+                        <div class="concept-card glass-card">
+                            <div class="concept-icon">📢</div>
+                            <h4>SSE</h4>
+                            <p>Server-to-client streaming over HTTP. Simple, auto-reconnect.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="lesson-section">
+                    <h3>Visual Comparison</h3>
+                    <p>Watch how each protocol handles message delivery over time.</p>
+                    <div class="demo-container">
+                        <div class="demo-header"><span class="demo-dot red"></span><span
+                                class="demo-dot yellow"></span><span class="demo-dot green"></span><span
+                                class="demo-title">Protocol Comparison</span></div>
+                        <div class="demo-body">
+                            <div class="controls">
+                                <button class="btn btn-primary" onclick="startDemo()">Start Demo</button>
+                                <button class="btn btn-secondary" onclick="resetDemo()">Reset</button>
+                            </div>
+                            <div class="protocol-demo">
+                                <div class="protocol-card" id="pollingCard">
+                                    <div class="protocol-header"><span class="protocol-name">Polling</span><span
+                                            class="tag">Every 2s</span></div>
+                                    <div class="timeline-container" id="pollingTimeline"><span
+                                            class="timeline-label client">Client</span><span
+                                            class="timeline-label server">Server</span>
+                                        <div class="timeline-line client"></div>
+                                        <div class="timeline-line server"></div>
+                                    </div>
+                                </div>
+                                <div class="protocol-card" id="longPollingCard">
+                                    <div class="protocol-header"><span class="protocol-name">Long Polling</span><span
+                                            class="tag">Held until data</span></div>
+                                    <div class="timeline-container" id="longPollingTimeline"><span
+                                            class="timeline-label client">Client</span><span
+                                            class="timeline-label server">Server</span>
+                                        <div class="timeline-line client"></div>
+                                        <div class="timeline-line server"></div>
+                                    </div>
+                                </div>
+                                <div class="protocol-card" id="wsCard">
+                                    <div class="protocol-header"><span class="protocol-name">WebSocket</span><span
+                                            class="tag">Full-duplex</span></div>
+                                    <div class="timeline-container" id="wsTimeline"><span
+                                            class="timeline-label client">Client</span><span
+                                            class="timeline-label server">Server</span>
+                                        <div class="timeline-line client"></div>
+                                        <div class="timeline-line server"></div>
+                                    </div>
+                                </div>
+                                <div class="protocol-card" id="sseCard">
+                                    <div class="protocol-header"><span class="protocol-name">SSE</span><span
+                                            class="tag">Server push</span></div>
+                                    <div class="timeline-container" id="sseTimeline"><span
+                                            class="timeline-label client">Client</span><span
+                                            class="timeline-label server">Server</span>
+                                        <div class="timeline-line client"></div>
+                                        <div class="timeline-line server"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="lesson-section">
+                    <h3>Comparison</h3>
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>Aspect</th>
+                                <th>Polling</th>
+                                <th>Long Polling</th>
+                                <th>WebSocket</th>
+                                <th>SSE</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Direction</strong></td>
+                                <td>Client→Server</td>
+                                <td>Client→Server</td>
+                                <td>Both ways</td>
+                                <td>Server→Client</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Connection</strong></td>
+                                <td>New each time</td>
+                                <td>Held, reopened</td>
+                                <td>Persistent</td>
+                                <td>Persistent</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Overhead</strong></td>
+                                <td>High (headers)</td>
+                                <td>Medium</td>
+                                <td>Low (frames)</td>
+                                <td>Low</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Use Case</strong></td>
+                                <td>Simple updates</td>
+                                <td>Compatibility</td>
+                                <td>Chat, games</td>
+                                <td>Feeds, logs</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Browser Support</strong></td>
+                                <td>Universal</td>
+                                <td>Universal</td>
+                                <td>Universal</td>
+                                <td>Most (not IE)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section class="lesson-section">
+                    <h3>When to Use Each</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
+                        <div class="info-box tip">
+                            <div class="info-box-title">WebSocket</div>
+                            <p>Chat apps, multiplayer games, collaborative editing. Need bidirectional, low-latency.</p>
+                        </div>
+                        <div class="info-box info">
+                            <div class="info-box-title">SSE</div>
+                            <p>Live feeds, dashboards, notifications. Server pushes, client just listens.</p>
+                        </div>
+                        <div class="info-box warning">
+                            <div class="info-box-title">Long Polling</div>
+                            <p>When WebSocket/SSE unavailable. Works everywhere but more overhead.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- WebRTC -->
+                <section class="lesson-section">
+                    <h3>WebRTC: Peer-to-Peer Real-time</h3>
+                    <p>For ultra-low latency video/audio, skip the server entirely with WebRTC.</p>
+
+                    <div class="webrtc-visual" style="display:flex; justify-content:center; margin: 2rem 0;">
+                        <svg width="600" height="200" viewBox="0 0 600 200">
+                            <!-- Definitions -->
+                            <defs>
+                                <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5"
+                                    orient="auto">
+                                    <polygon points="0 0, 10 3.5, 0 7" fill="var(--text-muted)" />
+                                </marker>
+                                <marker id="arrowhead-success" markerWidth="10" markerHeight="7" refX="9" refY="3.5"
+                                    orient="auto">
+                                    <polygon points="0 0, 10 3.5, 0 7" fill="var(--success)" />
+                                </marker>
+                            </defs>
+
+                            <!-- Scenario 1: Client-Server -->
+                            <g transform="translate(0,0)">
+                                <text x="130" y="20" text-anchor="middle" font-weight="600"
+                                    fill="var(--text-primary)">WebSocket (Client-Server)</text>
+                                <rect x="30" y="80" width="60" height="40" rx="4" fill="var(--bg-tertiary)"
+                                    stroke="var(--accent-primary)" stroke-width="2" />
+                                <text x="60" y="105" text-anchor="middle" font-size="12"
+                                    fill="var(--text-primary)">Client A</text>
+
+                                <rect x="170" y="80" width="60" height="40" rx="4" fill="var(--bg-tertiary)"
+                                    stroke="var(--accent-primary)" stroke-width="2" />
+                                <text x="200" y="105" text-anchor="middle" font-size="12"
+                                    fill="var(--text-primary)">Client B</text>
+
+                                <circle cx="130" cy="150" r="20" fill="var(--bg-secondary)" stroke="var(--text-muted)"
+                                    stroke-width="2" />
+                                <text x="130" y="155" text-anchor="middle" font-size="10"
+                                    fill="var(--text-primary)">Server</text>
+
+                                <!-- Paths -->
+                                <path d="M 60 120 Q 95 150 110 150" fill="none" stroke="var(--text-muted)"
+                                    stroke-width="2" marker-end="url(#arrowhead)" />
+                                <path d="M 150 150 Q 165 150 200 120" fill="none" stroke="var(--text-muted)"
+                                    stroke-width="2" marker-end="url(#arrowhead)" />
+                                <text x="130" y="190" text-anchor="middle" font-size="10" fill="var(--error)">High
+                                    Latency (2 Hops)</text>
+                            </g>
+
+                            <!-- DIVIDER -->
+                            <line x1="300" y1="20" x2="300" y2="180" stroke="var(--border-light)" stroke-width="2"
+                                stroke-dasharray="5,5" />
+
+                            <!-- Scenario 2: WebRTC -->
+                            <g transform="translate(320,0)">
+                                <text x="130" y="20" text-anchor="middle" font-weight="600"
+                                    fill="var(--text-primary)">WebRTC (Peer-to-Peer)</text>
+                                <rect x="30" y="80" width="60" height="40" rx="4" fill="var(--bg-tertiary)"
+                                    stroke="var(--success)" stroke-width="2" />
+                                <text x="60" y="105" text-anchor="middle" font-size="12"
+                                    fill="var(--text-primary)">Client A</text>
+
+                                <rect x="170" y="80" width="60" height="40" rx="4" fill="var(--bg-tertiary)"
+                                    stroke="var(--success)" stroke-width="2" />
+                                <text x="200" y="105" text-anchor="middle" font-size="12"
+                                    fill="var(--text-primary)">Client B</text>
+
+                                <!-- P2P Path -->
+                                <path d="M 90 100 L 160 100" fill="none" stroke="var(--success)" stroke-width="3"
+                                    marker-end="url(#arrowhead-success)" />
+                                <text x="130" y="90" text-anchor="middle" font-size="10" fill="var(--success)"
+                                    font-weight="bold">Direct (1 Hop)</text>
+
+                                <text x="130" y="140" text-anchor="middle" font-size="10"
+                                    fill="var(--text-muted)">Server only used for Signal</text>
+                            </g>
+                        </svg>
+                    </div>
+
+                    <div class="concept-grid">
+                        <div class="concept-card glass-card">
+                            <div class="concept-icon">📹</div>
+                            <h4>Direct Peer Connection</h4>
+                            <p>Clients connect directly to each other (after initial signaling via server). Ultra-low
+                                latency for video/audio/data.</p>
+                        </div>
+                        <div class="concept-card glass-card">
+                            <div class="concept-icon">🔄</div>
+                            <h4>Signaling Server</h4>
+                            <p>Uses WebSocket/SSE for initial handshake (ICE candidates, SDP offers). Then goes
+                                peer-to-peer.</p>
+                        </div>
+                        <div class="concept-card glass-card">
+                            <div class="concept-icon">🌍</div>
+                            <h4>NAT Traversal</h4>
+                            <p>Uses STUN/TURN servers to punch through firewalls and NATs. Fallback to relay if direct
+                                connection fails.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Message Ordering -->
+                <section class="lesson-section">
+                    <h3>Message Ordering & Delivery Guarantees</h3>
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>Protocol</th>
+                                <th>Order Guarantee</th>
+                                <th>Delivery Guarantee</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>WebSocket over TCP</strong></td>
+                                <td>✅ In-order</td>
+                                <td>✅ Exactly-once</td>
+                            </tr>
+                            <tr>
+                                <td><strong>SSE</strong></td>
+                                <td>✅ In-order</td>
+                                <td>⚠️ At-least-once (auto-retry)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>WebRTC DataChannel (unreliable)</strong></td>
+                                <td>❌ No guarantee</td>
+                                <td>❌ Best-effort (may drop)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>MQTT</strong></td>
+                                <td>✅ In-order (per topic)</td>
+                                <td>⚙️ Configurable (QoS 0/1/2)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <!-- Quiz -->
+                <section class="lesson-section">
+                    <h3>Check Your Understanding</h3>
+                    <div class="quiz-container">
+                        <p class="quiz-question">
+                            You're building a stock price dashboard that needs live updates. Server only pushes, client
+                            only receives. What's best?
+                        </p>
+                        <div class="quiz-options" id="rtQuizOptions">
+                            <div class="quiz-option" onclick="checkRTAnswer(this, false)">WebSocket — most popular for
+                                real-time</div>
+                            <div class="quiz-option" onclick="checkRTAnswer(this, true)">Server-Sent Events — perfect
+                                for one-way server→client</div>
+                            <div class="quiz-option" onclick="checkRTAnswer(this, false)">Polling every second —
+                                simplest approach</div>
+                            <div class="quiz-option" onclick="checkRTAnswer(this, false)">WebRTC — lowest latency</div>
+                        </div>
+                        <div id="rtQuizFeedback" style="margin-top: 1rem; display: none;"></div>
+                    </div>
+                </section>
+
+                <div class="lesson-nav">
+                    <a href="10-consistent-hashing.html" class="nav-btn">← Consistent Hashing</a>
+                    <a href="../index.html" class="nav-btn">🏠 Course Home</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let demoInterval = null;
+        let time = 0;
+        const timelines = {};
+
+        function addMessage(timeline, type, text, pos, yOffset) {
+            const el = document.createElement('div');
+            el.className = 'message ' + type;
+            el.textContent = text;
+            el.style.left = (50 + pos * 30) + 'px';
+            el.style.top = yOffset + 'px';
+            document.getElementById(timeline).appendChild(el);
+        }
+
+        function startDemo() {
+            resetDemo();
+            demoInterval = setInterval(() => {
+                time++;
+                // Polling: request every 2 ticks
+                if (time % 2 === 0 && time <= 10) {
+                    addMessage('pollingTimeline', 'request', 'GET /data', time, 15);
+                    setTimeout(() => addMessage('pollingTimeline', 'response', time === 6 ? '{"msg":"Hi!"}' : '{}', time, 75), 200);
+                }
+                // Long polling: hold until data at tick 6
+                if (time === 1) {
+                    addMessage('longPollingTimeline', 'request', 'GET /subscribe', 1, 15);
+                    // Add holding indicator
+                    const holdBox = document.createElement('div');
+                    holdBox.id = 'longPollHold';
+                    holdBox.style.position = 'absolute';
+                    holdBox.style.left = (50 + 1 * 30 + 30) + 'px'; // Start after request
+                    holdBox.style.width = '120px'; // Span until tick 6
+                    holdBox.style.top = '40px';
+                    holdBox.style.height = '40px';
+                    holdBox.style.border = '2px dashed var(--warning)';
+                    holdBox.style.borderRadius = '4px';
+                    holdBox.style.display = 'flex';
+                    holdBox.style.alignItems = 'center';
+                    holdBox.style.justifyContent = 'center';
+                    holdBox.style.fontSize = '0.6rem';
+                    holdBox.style.color = 'var(--text-muted)';
+                    holdBox.style.background = 'rgba(245, 158, 11, 0.1)';
+                    holdBox.innerHTML = 'Holding Connection...';
+                    document.getElementById('longPollingTimeline').appendChild(holdBox);
+                }
+                if (time === 6) {
+                    const holdBox = document.getElementById('longPollHold');
+                    if (holdBox) holdBox.remove();
+                    addMessage('longPollingTimeline', 'response', '{"msg":"Hi!"}', 6, 75);
+                    setTimeout(() => addMessage('longPollingTimeline', 'request', 'GET /subscribe', 7, 15), 300);
+                }
+                // WebSocket: bidirectional
+                if (time === 1) addMessage('wsTimeline', 'request', 'Upgrade: WS', 1, 15);
+                if (time === 2) addMessage('wsTimeline', 'response', '101 Switching', 2, 75);
+                if (time === 4) addMessage('wsTimeline', 'request', 'send("Hello")', 4, 15);
+                if (time === 6) addMessage('wsTimeline', 'push', 'push("Hi!")', 6, 75);
+                if (time === 8) addMessage('wsTimeline', 'push', 'push("Update")', 8, 75);
+                // SSE: server push only
+                if (time === 1) addMessage('sseTimeline', 'request', 'GET /events', 1, 15);
+                if (time === 2) addMessage('sseTimeline', 'response', 'text/event-stream', 2, 75);
+                if (time === 6) addMessage('sseTimeline', 'push', 'data: Hi!', 6, 75);
+                if (time === 9) addMessage('sseTimeline', 'push', 'data: Update', 9, 75);
+
+                if (time >= 12) clearInterval(demoInterval);
+            }, 600);
+        }
+
+        function resetDemo() {
+            clearInterval(demoInterval);
+            time = 0;
+            ['pollingTimeline', 'longPollingTimeline', 'wsTimeline', 'sseTimeline'].forEach(id => {
+                const el = document.getElementById(id);
+                el.querySelectorAll('.message').forEach(m => m.remove());
+            });
+        }
+
+        // Quiz
+        function checkRTAnswer(el, correct) {
+            const options = document.querySelectorAll('#rtQuizOptions .quiz-option');
+            options.forEach(opt => { opt.style.pointerEvents = 'none'; opt.classList.remove('correct', 'incorrect'); });
+            el.classList.add(correct ? 'correct' : 'incorrect');
+            if (!correct) options[1].classList.add('correct');
+            const feedback = document.getElementById('rtQuizFeedback');
+            feedback.style.display = 'block';
+            feedback.innerHTML = correct
+                ? '<div class="info-box tip"><div class="info-box-title">✅ Correct!</div><p>SSE is designed exactly for this: server→client uni-directional streaming. Built into browsers, auto-reconnects, and simpler than WebSocket for one-way data.</p></div>'
+                : '<div class="info-box warning"><div class="info-box-title">❌ Not quite</div><p>WebSocket works but is overkill for one-way data. Polling wastes bandwidth. WebRTC is for low-latency peer-to-peer, not server pushing. SSE is the perfect fit!</p></div>';
+        }
+    </script>
+</body>
+
+</html>
