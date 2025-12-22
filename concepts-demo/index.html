@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Design Mastery | Interactive Learning</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="styles/main.css">
+</head>
+
+<body>
+    <div class="bg-pattern"></div>
+    <div class="bg-grid"></div>
+
+    <nav class="nav">
+        <div class="container nav-content">
+            <a href="index.html" class="nav-logo">System Design Mastery</a>
+            <ul class="nav-links">
+                <li><a href="#lessons">Lessons</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <span class="hero-badge">🚀 Interactive Learning Platform</span>
+                <h1 class="hero-title">System Design Mastery</h1>
+                <p class="hero-subtitle">
+                    Master the fundamentals of building scalable, reliable, and efficient systems
+                    through interactive visualizations and hands-on examples.
+                </p>
+                <div class="hero-buttons">
+                    <a href="#lessons" class="btn btn-primary">Start Learning</a>
+                    <a href="lessons/01-fundamentals.html" class="btn btn-secondary">First Lesson →</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Stats Section -->
+    <section class="section">
+        <div class="container">
+            <div class="stats-grid">
+                <div class="stat-card glass-card">
+                    <div class="stat-number">11</div>
+                    <div class="stat-label">Interactive Lessons</div>
+                </div>
+                <div class="stat-card glass-card">
+                    <div class="stat-number">50+</div>
+                    <div class="stat-label">Visual Demos</div>
+                </div>
+                <div class="stat-card glass-card">
+                    <div class="stat-number">∞</div>
+                    <div class="stat-label">Practice Scenarios</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Lessons Section -->
+    <section id="lessons" class="section">
+        <div class="container">
+            <div class="section-header">
+                <p class="section-eyebrow">Curriculum</p>
+                <h2 class="section-title">Interactive Lessons</h2>
+                <p class="section-desc">
+                    Each lesson includes interactive demos, visualizations, and quizzes to reinforce your learning.
+                </p>
+            </div>
+            <div class="course-grid" id="lessonsGrid">
+                <!-- Lessons are rendered dynamically by app.js -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 System Design Mastery. Built for learning.</p>
+        </div>
+    </footer>
+
+    <script src="js/app.js"></script>
+</body>
+
+</html>
