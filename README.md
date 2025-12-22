@@ -73,7 +73,7 @@
 - **Refresh-Ahead**
     - The cache is configured to automatically refresh a key before it fully expires. If a key has a 60-second TTL, the system might try to reload it from the database at the 50-second mark if it is being accessed.
     - Highly popular keys (hot keys) where you cannot afford the latency of a cache miss (e.g., the homepage of a major news site or current stock prices).
-- **Stale-while-revalidate**
+- **Stale-While-Revalidate**
     - When a cache entry expires, the system serves the stale (old) data one last time to the user immediately, while simultaneously triggering a background process to fetch the fresh data.
 
 ### Cache Eviction
@@ -136,9 +136,48 @@
 ## Indexes
 - Index on a column - we store that column and a pointer to the whole row in the index.
 - An index can dramatically speed up data retrieval but may itself be large due to the additional keys, which slow down data insertion & update.
-- Primary Index; Clustered Index; Secondary Index
-- Dense Index; Sparse Index
-- Bitmap Index; Reverse Index; Hash Index; Filtered Index; Function-based Index; Spatial Index
+### Clustered vs Secondary
+- **Clustered Index**
+    - Determines the physical order of data in the table.
+    - Only one per table (usually on Primary Key).
+    - Leaf nodes contain the actual data rows.
+    - Very fast for range queries `BETWEEN` and ordering `ORDER BY`.
+- **Secondary Index (Non-Clustered)**
+    - Stored separately from the data; contains the key and a pointer (or PK) to the data row.
+    - Can have multiple secondary indexes per table.
+    - Slower than clustered because of the extra lookup step (unless it's a covering index).
+- **Primary Index**
+    - The index automatically created on the Primary Key. In most DBs (like MySQL InnoDB), this is the Clustered Index.
+
+### Index Structures
+- **Dense Index**
+    - Has an index entry for *every* search key value in the data file.
+    - Faster lookup, consumes more memory/disk space.
+- **Sparse Index**
+    - Has index entries for only *some* of the search values (e.g., one per block/page).
+    - Requires less space, but finding a record involves finding the block and then scanning it.
+
+### Specialized Indexes
+- **Hash Index**
+    - Uses a hash table. O(1) for equality lookups (`=`).
+    - **Pros**: Extremely fast for exact matches.
+    - **Cons**: Cannot handle range queries (`>`, `<`) or sorting.
+- **Bitmap Index**
+    - Uses bit arrays (0s and 1s) for columns with low cardinality (few unique values like Gender, Boolean, Status).
+    - fast bitwise operations (AND, OR).
+- **Reverse Index (Inverted Index)**
+    - Maps content to its location (e.g., Word → List of Document IDs).
+    - The backbone of search engines (Elasticsearch, Lucene).
+- **Filtered Index (Partial Index)**
+    - Indexes only a subset of rows (e.g., `WHERE active = true`).
+    - Smaller size, faster maintenance.
+- **Function-based Index**
+    - Indexes the result of a function rather than the raw column value.
+    - Example: Index on `UPPER(username)` ensures case-insensitive login queries are fast.
+- **Spatial Index**
+    - Designed for multidimensional data.
+    - structures: R-Tree, Quad-Tree, Geohash.
+    - Efficient for "find nearest neighbor" or "within radius" queries.
 
 ## Proxies
 - A proxy server is a piece of *software or hardware* that acts as an intermediary, that can observe, modify, block, or route that traffic while pretending to be the other side (to the client it looks like “the server,” to the server it looks like “the client”).
@@ -178,11 +217,11 @@
 - Design concerns: health checks and failover logic, avoiding single points of failure (e.g., a single load balancer), and ensuring capacity headroom so remaining nodes can absorb load when one fails.
 
 ### Replication
-- Replication means sharing information to ensure consistency between redundant resources, such as software or hardware components, to improve reliability, fault-tolerance, or accessibility.
+- Replication means **sharing information to ensure consistency** between redundant resources, such as software or hardware components, to improve reliability, fault-tolerance, or accessibility.
 - Replication is widely used in many database management systems (DBMS), usually with a master-slave relationship between the original and the copies.
 
 ### Replication Strategies
-- Replication is more nuanced because it must preserve a chosen consistency model while handling partition and failure scenarios.
+- Replication is more nuanced because it **must preserve a chosen consistency model while handling partition and failure scenarios**.
 - Leader–follower (master–slave): one node accepts writes, propagates changes to followers; reads can be offloaded to followers to scale reads.
 - Multi-leader: multiple leaders accept writes, often per region, with conflict resolution (timestamps, version vectors, app-specific rules).
 - Sync vs Async 
@@ -257,7 +296,6 @@
 
 ## CAP Theorem
 - CAP is saying: in the presence of a network partition, you must sacrifice either strict consistency or full availability; you cannot keep both at the same time in a general distributed store.​
-
 - CAP theorem states that it is impossible for a distributed software system to simultaneously provide more than two out of three of the following guarantees.
 - Consistency: All nodes see the same data at the same time.
     - Consistency is achieved by updating several nodes before allowing further reads.
