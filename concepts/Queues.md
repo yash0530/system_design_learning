@@ -97,14 +97,18 @@ Kafka is technically not a queue; it is a **distributed streaming platform**. It
 
 Kafka does not track who has read what. It simply appends bytes to a file.
 
-* **The Log (Storage):**
+**The Log (Storage):**
 * Kafka treats data as a **Commit Log**. A topic is split into **Partitions**.
 * A Partition is an append-only sequence of files on disk.
-* **Zero-Copy Optimization:** When a consumer asks for data, Kafka uses the OS kernel's `sendfile()` system call. It transfers data directly from the disk cache to the network socket, bypassing the application memory entirely. This is why Kafka is fast.
-* **The Consumer (Offset):**
+
+**Zero-Copy Optimization:** 
+* When a consumer asks for data, Kafka uses the OS kernel's `sendfile()` system call. It transfers data directly from the disk cache to the network socket, bypassing the application memory entirely. This is why Kafka is fast.
+
+**The Consumer (Offset):**
 * Because Kafka doesn't delete messages when read, the **Consumer** is responsible for tracking its place.
 * This "bookmark" is called an **Offset** (e.g., "I am at index 500"). The consumer periodically saves this offset back to Kafka (in a special internal topic).
-* **Zookeeper vs. KRaft:**
+
+**Zookeeper vs. KRaft:**
 * Historically, Kafka used **Zookeeper** to manage cluster metadata (who is the leader?).
 * Modern Kafka (3.0+) uses **KRaft** (Kafka Raft), removing the Zookeeper dependency and managing metadata internally using its own log.
 
@@ -122,19 +126,19 @@ These are traditional **Queue** systems. They follow the "Smart Broker, Dumb Con
 
 #### **Architecture Deep Dive:**
 
-* **The Exchange (Router):**
+**The Exchange (Router):**
 * Producers don't send to queues; they send to an **Exchange**.
 * The Exchange acts as a mail sorter. It uses **Bindings** (rules) to push copies of messages into actual Queues.
-* **Push (Default) & Pull Model:**
+
+**Push (Default) & Pull Model:**
 * **Push:** By default, the broker **pushes** data to consumers for low latency. It maintains a TCP connection and streams data.
 * **Pull:** If the **Prefetch limit is set to 0**, ActiveMQ switches to a **Pull** model where consumers must explicitly request messages.
 * **Prefetch Limit:** The mechanism that controls this flow. It acts as a buffer size (e.g., "Don't send more than 10 unacknowledged messages").
-* **Storage (KahaDB / Mnesia):**
+
+**Storage (KahaDB / Mnesia):**
 * ActiveMQ uses **KahaDB** (a file-based store) for persistent messages.
 * However, its goal is **Empty Queues**. If consumers are fast, data never touches the disk; it stays in RAM.
 * **Cursor:** The broker maintains a pointer (cursor) for every message in RAM. If the queue grows too large, the broker slows down significantly as it thrashes between RAM and Disk.
-
-
 
 ---
 
@@ -152,12 +156,13 @@ SQS is a fully managed, distributed system where you see none of the infrastruct
 
 SQS does not behave like a single queue; it behaves like a massive fleet of buffers.
 
-* **Visibility Timeout (The Lock):**
+**Visibility Timeout (The Lock):**
 * SQS does not "push" messages. Consumers must **Poll** (pull).
 * When Consumer A pulls Message 1, SQS does not delete it. instead, it starts a timer called the **Visibility Timeout** (e.g., 30 seconds).
 * During these 30 seconds, Message 1 is **invisible** to other consumers.
 * If Consumer A crashes, the timer expires, and Message 1 "re-appears" in the queue for Consumer B to grab. This is how SQS handles failure without a complex broker.
-* **Distributed Storage (Redundancy):**
+
+**Distributed Storage (Redundancy):**
 * When you write to SQS, your message is replicated across multiple Availability Zones (data centers).
 * **Standard SQS:** Does **not** guarantee strict ordering. Because it stores data across many servers, Message B might be retrieved before Message A.
 * **FIFO SQS:** A special mode that guarantees ordering but has lower throughput limits (300-3,000 TPS) compared to Standard (Unlimited).
