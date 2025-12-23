@@ -258,7 +258,7 @@
 - **Document Databases**
     - Data is stored in documents (instead of rows and columns in a table) and these documents are grouped together in collections.
     - Each document can have an entirely different structure.
-    - Example: MongoDB, CouchDB, and Firebase
+    - Example: MongoDB, CouchDB, Firestore (Firebase's document DB)
 - **Wide-Column Databases**
     - A column family is roughly like a table, but each row can have a different set of columns, and new columns can be added at any time without changing a global schema.
     - Columnar databases are best suited for analyzing large datasets, distributed workloads where you need to scale horizontally across many machines.
@@ -272,10 +272,10 @@
 ### High level Differences
 - Storage - Discussed above
 - Schema
-    - SQL: The schema can be altered later, but it involves modifying the whole database and going offline.
+    - SQL: The schema can be altered later, but it may require careful migration strategies for large tables. Modern DBs support online schema changes.
 - Querying
 - Scalability
-    - SQL databases are vertically scalable. (Challenging to scale horizontally: Spanner)
+    - SQL databases are traditionally vertically scalable. (Some like Spanner, CockroachDB, and TiDB are designed for horizontal scaling)
     - NoSQL databases are horizontally scalable. Any cheap commodity hardware or cloud instances can host NoSQL databases.
 - Reliability or ACID Compliancy (Atomicity, Consistency, Isolation, Durability)
     - SQL: ACID Compliant
@@ -296,7 +296,7 @@
 
 ## CAP Theorem
 - CAP is saying: in the presence of a network partition, you must sacrifice either strict consistency or full availability; you cannot keep both at the same time in a general distributed store.​
-- CAP theorem states that it is impossible for a distributed software system to simultaneously provide more than two out of three of the following guarantees.
+- CAP theorem states that when a network partition occurs, a distributed system must choose between Consistency and Availability (partitions are inevitable, so you're really choosing CP or AP).
 - Consistency: All nodes see the same data at the same time.
     - Consistency is achieved by updating several nodes before allowing further reads.
 - Availability: All nodes respond to reads and writes.

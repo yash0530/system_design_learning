@@ -139,8 +139,8 @@ Temporary storage for frequently accessed data.
 1.  **Cache-Aside (Lazy Loading)**: App checks cache. If miss, app fetches from DB and updates cache.
     - *Pros*: Only requests data. Resilience (if cache fails, DB takes load).
     - *Cons*: Stale data gap. Initial latency on miss.
-2.  **Write-Through**: App writes to cache; cache writes to DB.
-    - *Pros*: Data consistency.
+2.  **Write-Through**: App writes to cache; cache writes to DB synchronously.
+    - *Pros*: Data consistency, cache always matches DB.
     - *Cons*: Higher write latency.
 3.  **Write-Back (Write-Behind)**: App writes to cache; cache asynchronously writes to DB.
     - *Pros*: Fast writes.
@@ -171,8 +171,8 @@ Decouple producers and consumers. Buffer bursts of traffic.
 
 ### Leader Election
 In a cluster, one node is designated as Leader to handle writes/coordination.
-- **algorithms**: Raft, Paxos, ZAB (ZooKeeper Atomic Broadcast).
-- **Split Brain**: Network partition creates two partial clusters, both electing a leader. Solved by Quorum (majority vote required).
+- **Algorithms**: Raft (most common in modern systems like etcd, Consul), Paxos (foundational but complex), ZAB (ZooKeeper Atomic Broadcast).
+- **Split Brain**: Network partition creates two partial clusters, both electing a leader. Solved by Quorum (majority vote required - need >50% of nodes to agree).
 
 ### Distributed Transactions
 - **2-Phase Commit (2PC)**: Coordinator asks "Can you commit?" -> Participants say "Yes" -> Coordinator says "Commit". Blocking, single point of failure.
@@ -200,7 +200,7 @@ How services find each other's IP addresses in dynamic environments (Kubernetes)
 Protecting resources from abuse.
 - **Token Bucket**: Tokens added at rate `r`. Request consumes token. Allows bursts.
 - **Leaky Bucket**: Request enters queue. Queue processed at constant rate. Smooths traffic.
-- **Fixed Window**: Counters reset every minute. Can allow 2x limit at boundaries.
+- **Fixed Window**: Counters reset every minute. Can allow up to 2x limit at window boundaries.
 - **Sliding Window Log**: Track timestamps. Accurate but expensive.
 - **Sliding Window Counter**: Hybrid approximation.
 
